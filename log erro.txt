@@ -1,0 +1,1151 @@
+novamente deu erro, o log de erro é o seguinte:
+
+[22:36:01] 🚀 Starting up repository: 'dashboard-eptran', branch: 'main', main module: 'app.py'
+
+[22:36:01] 🐙 Cloning repository...
+
+[22:36:02] 🐙 Cloning into '/mount/src/dashboard-eptran'...
+
+[22:36:02] 🐙 Cloned repository!
+
+[22:36:02] 🐙 Pulling code changes from Github...
+
+[22:36:02] 📦 Processing dependencies...
+
+──────────────────────────────────────── uv ───────────────────────────────────────────
+
+Using uv pip install.
+
+Using Python 3.14.7 environment at /home/adminuser/venv
+
+Resolved 49 packages in 544ms
+
+Prepared 49 packages in 2.31s
+
+Installed 49 packages in 211ms
+
+ [2026-09-15 22:36:06.146227] + altair==6.3.0
+
+ + anyio==4.15.1
+
+ + attrs==26.1.0
+
+ + certifi==2026.7.22
+
+ + cffi==2.1.1
+
+ + charset-normalizer==3.5.1
+
+ + click==8.5.0
+
+ + cryptography==50.0.1
+
+ + et-xmlfile==2.0.0
+
+ + google-auth==2.58.0
+
+ + google-auth-oauthlib==1.4.1
+
+ + gspread==6.2.1
+
+ + h11==0.16.0
+
+ + httptools==0.8.0
+
+ + idna==3.19
+
+ + itsdangerous==2.2.0
+
+ + jinja2==3.1.6
+
+ + jsonschema==4.26.0
+
+ + jsonschema-specifications==2025.9.1
+
+ + markupsafe==3.0.3
+
+ + narwhals==2.26.0
+
+ + numpy==2.5.3
+
+ + oauthlib==3.3.1
+
+ + openpyxl==3.1.5
+
+ + packaging==26.3
+
+ + pandas==3.0.5
+
+ + pillow==12.3.0
+
+ + plotly==[2026-09-15 22:36:06.146591] 7.1.0
+
+ + protobuf==7.36.1
+
+ + pyarrow==25.0.1
+
+ + pyasn1==0.6.4
+
+ + pyasn1-modules==0.4.2
+
+ + pycparser==3.0
+
+ + pydeck==0.9.3
+
+ + python-dateutil==2.9.0.post0
+
+ + python-multipart[2026-09-15 22:36:06.146857] ==0.0.32
+
+ + referencing==0.37.0
+
+ + requests==2.34.2
+
+ +[2026-09-15 22:36:06.148358]  requests-oauthlib==2.0.0
+
+ + rpds-py==2026.6.3
+
+ + six[2026-09-15 22:36:06.148735] ==1.17.0
+
+ + starlette==1.6.0
+
+ + streamlit==1.64.0
+
+ + toml==0.10.2
+
+ + typing-extensions==4.16.0
+
+ + urllib3==2.8.0
+
+ + uvicorn==0.53.0
+
+ + watchdog==6.0.0
+
+ + websockets==16.1.1
+
+Checking if Streamlit is installed
+
+Found Streamlit version 1.64.0 in the environment
+
+Detected pyarrow 25.0.1 (known segfault, apache/arrow#50471). Replacing with pyarrow<25.
+
+Using uv pip install.
+
+Using Python 3.14.7 environment at /home/adminuser/venv
+
+Resolved 1 package in 42ms
+
+Prepared 1 package in 795ms
+
+Uninstalled 1 package in 17ms
+
+Installed 1 package in 41ms
+
+ - pyarrow==25.0.1
+
+ +[2026-09-15 22:36:10.140958]  pyarrow==24.0.0
+
+Installing rich for an improved exception logging
+
+Using uv pip install.
+
+Using Python 3.14.7 environment at /home/adminuser/venv
+
+Resolved 4 packages in 124ms
+
+Prepared 4 packages in 127ms
+
+Installed 4 packages in 11ms
+
+ + markdown-it-py==[2026-09-15 22:36:11.508092] 4.2.0
+
+ + mdurl==0.1.2
+
+ + pygments==2.21.0
+
+ + rich==15.0.0
+
+────────────────────────────────────────────────────────────────────────────────────────
+
+[22:36:11] 🐍 Python dependencies were installed from /mount/src/dashboard-eptran/requirements.txt using uv.
+
+Check if streamlit is installed
+
+Streamlit is already installed
+
+[22:36:12] 📦 Processed dependencies!
+
+2026-09-15 22:36:14.726 Uvicorn server started on :::8501
+
+2026-09-15 22:36:22.668 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:36:23.062 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:36:23.163 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:36:51.027 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:36:51.100 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:36:51.152 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:36:58.788 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:36:58.862 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:36:58.932 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:37:01.730 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:01.785 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:01.833 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:37:03.305 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:03.358 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:03.405 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:37:05.858 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:05.923 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:05.979 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:37:09.219 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:09.274 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:37:09.319 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:39:47.580 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:39:47.646 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:39:47.696 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:39:50.524 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:39:50.598 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:39:50.657 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 22:39:57.633 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:39:57.688 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 22:39:57.731 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 23:08:20.175 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 23:08:20.253 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 23:08:20.306 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 23:10:09.330 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 23:10:09.389 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 23:10:09.429 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+2026-09-15 23:10:12.725 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 23:10:12.799 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+2026-09-15 23:10:12.851 Please replace `use_container_width` with `width`.
+
+`use_container_width` will be removed after 2025-12-31.
+
+For `use_container_width=True`, use `width='stretch'`. For `use_container_width=False`, use `width='content'`.
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:342 in <module>                            
+
+                                                                                
+
+    339 │   │   │   except Exception:                                           
+
+    340 │   │   │   │   pass                                                    
+
+    341 │   │   │                                                               
+
+  ❱ 342 │   │   │   fig_map = px.choropleth_mapbox(                             
+
+    343 │   │   │   │   df_geo,                                                 
+
+    344 │   │   │   │   geojson=geojson_data,                                   
+
+    345 │   │   │   │   locations='Bairro_Clean',                               
+
+────────────────────────────────────────────────────────────────────────────────
+
+AttributeError: module 'plotly.express' has no attribute 'choropleth_mapbox'
+
+[23:18:01] 🐙 Pulling code changes from Github...
+
+[23:18:02] 📦 Processing dependencies...
+
+[23:18:02] 📦 Processed dependencies!
+
+[23:18:03] 🔄 Updated app!
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:309 in <module>                            
+
+                                                                                
+
+    306                                                                         
+
+    307 # Filtro por Período                                                    
+
+    308 min_year, max_year = int(df_data['Ano'].min()), int(df_data['Ano'].max  
+
+  ❱ 309 selected_years = st.sidebar.slider("Anos de Execução", min_value=min_y  
+
+    310                                                                         
+
+    311 # Filtro por Bairro                                                     
+
+    312 bairros_list = ["Todos os Bairros"] + sorted(list(df_data['bairro'].un  
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+
+  util.py:725 in wrapped_func                                                   
+
+────────────────────────────────────────────────────────────────────────────────
+
+TypeError: SliderMixin.slider() got an unexpected keyword argument 
+
+'max_year_value'
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:309 in <module>                            
+
+                                                                                
+
+    306                                                                         
+
+    307 # Filtro por Período                                                    
+
+    308 min_year, max_year = int(df_data['Ano'].min()), int(df_data['Ano'].max  
+
+  ❱ 309 selected_years = st.sidebar.slider("Anos de Execução", min_value=min_y  
+
+    310                                                                         
+
+    311 # Filtro por Bairro                                                     
+
+    312 bairros_list = ["Todos os Bairros"] + sorted(list(df_data['bairro'].un  
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+
+  util.py:725 in wrapped_func                                                   
+
+────────────────────────────────────────────────────────────────────────────────
+
+TypeError: SliderMixin.slider() got an unexpected keyword argument 
+
+'max_year_value'
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:309 in <module>                            
+
+                                                                                
+
+    306                                                                         
+
+    307 # Filtro por Período                                                    
+
+    308 min_year, max_year = int(df_data['Ano'].min()), int(df_data['Ano'].max  
+
+  ❱ 309 selected_years = st.sidebar.slider("Anos de Execução", min_value=min_y  
+
+    310                                                                         
+
+    311 # Filtro por Bairro                                                     
+
+    312 bairros_list = ["Todos os Bairros"] + sorted(list(df_data['bairro'].un  
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+
+  util.py:725 in wrapped_func                                                   
+
+────────────────────────────────────────────────────────────────────────────────
+
+TypeError: SliderMixin.slider() got an unexpected keyword argument 
+
+'max_year_value'
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:309 in <module>                            
+
+                                                                                
+
+    306                                                                         
+
+    307 # Filtro por Período                                                    
+
+    308 min_year, max_year = int(df_data['Ano'].min()), int(df_data['Ano'].max  
+
+  ❱ 309 selected_years = st.sidebar.slider("Anos de Execução", min_value=min_y  
+
+    310                                                                         
+
+    311 # Filtro por Bairro                                                     
+
+    312 bairros_list = ["Todos os Bairros"] + sorted(list(df_data['bairro'].un  
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+
+  util.py:725 in wrapped_func                                                   
+
+────────────────────────────────────────────────────────────────────────────────
+
+TypeError: SliderMixin.slider() got an unexpected keyword argument 
+
+'max_year_value'
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:309 in <module>                            
+
+                                                                                
+
+    306                                                                         
+
+    307 # Filtro por Período                                                    
+
+    308 min_year, max_year = int(df_data['Ano'].min()), int(df_data['Ano'].max  
+
+  ❱ 309 selected_years = st.sidebar.slider("Anos de Execução", min_value=min_y  
+
+    310                                                                         
+
+    311 # Filtro por Bairro                                                     
+
+    312 bairros_list = ["Todos os Bairros"] + sorted(list(df_data['bairro'].un  
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+
+  util.py:725 in wrapped_func                                                   
+
+────────────────────────────────────────────────────────────────────────────────
+
+TypeError: SliderMixin.slider() got an unexpected keyword argument 
+
+'max_year_value'
+
+────────────────────── Traceback (most recent call last) ───────────────────────
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/exec_code.py:136 in exec_func_with_error_handling                        
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/scriptru  
+
+  nner/script_runner.py:909 in code_to_exec                                     
+
+                                                                                
+
+  /mount/src/dashboard-eptran/app.py:309 in <module>                            
+
+                                                                                
+
+    306                                                                         
+
+    307 # Filtro por Período                                                    
+
+    308 min_year, max_year = int(df_data['Ano'].min()), int(df_data['Ano'].max  
+
+  ❱ 309 selected_years = st.sidebar.slider("Anos de Execução", min_value=min_y  
+
+    310                                                                         
+
+    311 # Filtro por Bairro                                                     
+
+    312 bairros_list = ["Todos os Bairros"] + sorted(list(df_data['bairro'].un  
+
+                                                                                
+
+  /home/adminuser/venv/lib/python3.14/site-packages/streamlit/runtime/metrics_  
+
+  util.py:725 in wrapped_func                                                   
+
+────────────────────────────────────────────────────────────────────────────────
+
+TypeError: SliderMixin.slider() got an unexpected keyword argument 
+
+'max_year_value'

@@ -11,76 +11,79 @@ import time
 st.set_page_config(
     page_title="Dashboard EPTRAN",
     page_icon="🚦",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Estilo CSS customizado - Tema Claro com Fontes Escuras
+# Estilos CSS de Alto Contraste e Fontes Escuras
 st.markdown("""
 <style>
-    /* Estilo Geral de Fontes Escuras */
-    body, .stApp {
-        background-color: #f8fafc;
-        color: #0f172a;
+    /* Estilo Geral de Fundo e Fontes */
+    .stApp {
+        background-color: #F8FAFC;
+        color: #0F172A;
     }
+    
+    /* Fontes Escuras e Legíveis */
+    h1, h2, h3, h4, h5, h6, p, span, label, div {
+        color: #0F172A !important;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    
     .main-title {
-        color: #1e3a8a;
+        color: #1E3A8A !important;
         font-weight: 800;
         font-size: 26px;
         margin-bottom: 2px;
-        padding-top: 0px;
     }
     .sub-title {
-        color: #475569;
+        color: #475569 !important;
         font-size: 13px;
-        font-weight: 500;
         margin-bottom: 15px;
+        font-weight: 500;
     }
     
-    /* Customização dos Cards de Métricas (KPIs) */
+    /* Barra Lateral / Sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #E2E8F0;
+    }
+    
+    /* Cartões de Métricas (KPIs) */
     div[data-testid="stMetric"] {
-        background-color: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-left: 5px solid #2563eb;
+        background-color: #FFFFFF;
+        border: 1px solid #CBD5E1;
+        border-left: 5px solid #2563EB;
+        padding: 12px 16px;
         border-radius: 8px;
-        padding: 10px 15px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
-    div[data-testid="stMetricLabel"] > label {
-        color: #475569 !important;
+    div[data-testid="stMetricLabel"] p {
         font-size: 11px !important;
         font-weight: 700 !important;
+        color: #475569 !important;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    div[data-testid="stMetricValue"] {
-        color: #0f172a !important;
+    div[data-testid="stMetricValue"] div {
         font-size: 22px !important;
         font-weight: 800 !important;
+        color: #0F172A !important;
     }
     
-    /* Ajustes na Barra Lateral */
-    section[data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e2e8f0;
-    }
-    section[data-testid="stSidebar"] label {
-        color: #1e293b !important;
-        font-weight: 600 !important;
-    }
-    .css-1d31200, .stSelectbox, .stDateInput, .stRadio {
-        color: #0f172a !important;
+    /* Botões e Seletores */
+    .stRadio label, .stSelectbox label, .stDateInput label {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        color: #1E293B !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------------------------------
-# CONSTANTES DE ESTILO PLOTLY (FONTES ESCURAS)
-# ------------------------------------------------------------------------------
-DARK_FONT = dict(family="Arial, sans-serif", size=12, color="#0f172a")
-DARK_TITLE_FONT = dict(family="Arial, sans-serif", size=14, color="#0f172a", weight="bold")
+DARK_FONT = dict(family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color="#0F172A")
 
 # ------------------------------------------------------------------------------
-# CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
+# 1. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
 # ------------------------------------------------------------------------------
 SHEET_ID = "13pLTKJgZRnA6cA4ZaxSZDm7wtvPBbI41Rx-pijOhNK0"
 
@@ -147,7 +150,7 @@ def load_data():
     col_bairro = 'Bairro' if 'Bairro' in df.columns else df.columns[2]
     col_pub = 'Público' if 'Público' in df.columns else df.columns[3]
 
-    df['Total_Num'] = pd.to_numeric(df[col_total], errors='coerce').fillna(0).astype(int)
+    df['Total_Num'] = pd.to_numeric(df[col_total].astype(str).str.replace(r'[^\d]', '', regex=True), errors='coerce').fillna(0).astype(int)
     df['Data_Parsed'] = pd.to_datetime(df['Data'].astype(str), errors='coerce', dayfirst=True)
     df['Data_Parsed'] = df['Data_Parsed'].fillna(pd.to_datetime('2022-01-01'))
     df['Ano_Val'] = df['Data_Parsed'].dt.year.astype(int)
@@ -163,47 +166,23 @@ def load_data():
 df = load_data()
 
 # ------------------------------------------------------------------------------
-# SIDEBAR / LOGO & FILTROS
+# 2. SIDEBAR: LOGO, FILTROS E PAGINAÇÃO
 # ------------------------------------------------------------------------------
+# Logo se existir (use_container_width=True para compatibilidade)
 if os.path.exists("logo.png"):
-    st.sidebar.image("logo.png", use_column_width=True)
+    st.sidebar.image("logo.png", use_container_width=True)
 elif os.path.exists("logo.jpg"):
-    st.sidebar.image("logo.jpg", use_column_width=True)
+    st.sidebar.image("logo.jpg", use_container_width=True)
 
-st.sidebar.title("🚦 EPTRAN Joinville")
+st.sidebar.subheader("🔍 Filtros de Análise")
 
-# Navegação e Rotação Automática
-st.sidebar.markdown("### 📄 Páginas do Dashboard")
-page_options = [
-    "1. Fluxo de Execução (Sankey)",
-    "2. Mapa de Cobertura (Bairros)",
-    "3. Evolução e Rankings"
-]
-
-if "page_idx" not in st.session_state:
-    st.session_state.page_idx = 0
-
-auto_rotate = st.sidebar.checkbox("🔄 Alternar Páginas Automático (15s)", value=False)
-
-selected_page_str = st.sidebar.radio(
-    "Selecione a Página",
-    page_options,
-    index=st.session_state.page_idx
-)
-st.session_state.page_idx = page_options.index(selected_page_str)
-
-st.sidebar.markdown("---")
-st.sidebar.subheader("🔍 Filtros de Dados")
-
-# Seletor de Métrica
 metrica = st.sidebar.radio(
-    "Métrica de Análise",
+    "Métrica Principal",
     ["👥 Pessoas Impactadas", "📋 Nº de Eventos / Lançamentos"],
     index=0
 )
 usar_soma = (metrica == "👥 Pessoas Impactadas")
 
-# Filtro de Data
 min_date = df['Data_Parsed'].min().date()
 max_date = df['Data_Parsed'].max().date()
 
@@ -214,11 +193,9 @@ start_date, end_date = st.sidebar.date_input(
     max_value=max_date
 )
 
-# Filtro de Bairro
 bairros_unicos = ["Todos os Bairros"] + sorted([b for b in df['Bairro_Clean'].unique() if b and b != 'Nan'])
 sel_bairro = st.sidebar.selectbox("Bairro", bairros_unicos)
 
-# Filtro de Programa e Ação Encadeada
 programas_unicos = ["Todos os Programas"] + sorted([p for p in df['Programa_Clean'].unique() if p])
 sel_prog = st.sidebar.selectbox("Programa", programas_unicos)
 
@@ -230,7 +207,28 @@ else:
 
 sel_acao = st.sidebar.selectbox("Ação / Projeto", acoes_unicas)
 
-# Carregamento do GeoJSON
+# Seleção de Visão e Rotação Automática
+st.sidebar.markdown("---")
+st.sidebar.subheader("📺 Navegação do Painel")
+
+auto_rotate = st.sidebar.checkbox("🔄 Alternar Páginas Automático (15s)", value=False)
+
+pages = [
+    "1. Fluxo de Execução (Sankey)",
+    "2. Cobertura Territorial (Mapa)",
+    "3. Evolução Histórica e Ranking"
+]
+
+if 'page_index' not in st.session_state:
+    st.session_state.page_index = 0
+
+if auto_rotate:
+    selected_page = st.sidebar.radio("Selecione a Visão", pages, index=st.session_state.page_index)
+else:
+    selected_page = st.sidebar.radio("Selecione a Visão", pages, index=st.session_state.page_index)
+    st.session_state.page_index = pages.index(selected_page)
+
+# Carregamento do GeoJSON local
 geojson_data = None
 if os.path.exists("bairros.geojson"):
     try:
@@ -240,7 +238,7 @@ if os.path.exists("bairros.geojson"):
         pass
 
 # ------------------------------------------------------------------------------
-# FILTRAGEM DOS DADOS
+# 3. FILTRAGEM DOS DADOS
 # ------------------------------------------------------------------------------
 mask = (df['Data_Parsed'].dt.date >= start_date) & (df['Data_Parsed'].dt.date <= end_date)
 
@@ -254,7 +252,7 @@ if sel_acao != "Todas as Ações":
 df_filtered = df[mask]
 
 # ------------------------------------------------------------------------------
-# HEADER COMPACTO E CARDS DE KPIS
+# 4. CABEÇALHO COMPACTO + KPIS
 # ------------------------------------------------------------------------------
 st.markdown('<p class="main-title">Dashboard EPTRAN — Execuções de Trânsito</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-title">Prefeitura Municipal de Joinville | Série Histórica (2022–2026)</p>', unsafe_allow_html=True)
@@ -286,18 +284,13 @@ else:
 col3.metric("Bairro Destaque", top_b)
 col4.metric("Programa Destaque", top_p)
 
-st.markdown("<div style='margin-bottom: 10px;'></div>", unsafe_allow_html=True)
+lbl_m = "Soma de Pessoas" if usar_soma else "Nº de Eventos"
 
 # ------------------------------------------------------------------------------
-# RENDERIZAÇÃO DAS PÁGINAS INDIVIDUAIS
+# 5. PÁGINA 1: SANKEY DIAGRAM (LARGURA TOTAL)
 # ------------------------------------------------------------------------------
-lbl_m = "Pessoas Impactadas" if usar_soma else "Nº de Eventos"
-
-if st.session_state.page_idx == 0:
-    # --------------------------------------------------------------------------
-    # PÁGINA 1: DIAGRAMA DE SANKEY (LARGURA TOTAL E GRANDE DESTAQUE)
-    # --------------------------------------------------------------------------
-    st.subheader(f"📊 Fluxo Integrado de Execução — EPTRAN ({lbl_m})")
+if selected_page.startswith("1"):
+    st.subheader(f"📊 Diagrama de Sankey — Fluxo de Atendimento ({lbl_m})")
     if not df_filtered.empty:
         links_map = {}
         for _, r in df_filtered.iterrows():
@@ -317,32 +310,25 @@ if st.session_state.page_idx == 0:
         fig_sankey = go.Figure(data=[go.Sankey(
             node=dict(
                 pad=18, thickness=20,
-                line=dict(color="#0f172a", width=0.5),
-                label=nodes,
-                color="#2563eb",
-                font=DARK_FONT
+                line=dict(color="#0F172A", width=0.5),
+                label=nodes, color="#1E3A8A"
             ),
-            link=dict(
-                source=sources, target=targets, value=values,
-                color="rgba(148, 163, 184, 0.35)"
-            )
+            link=dict(source=sources, target=targets, value=values, color="rgba(37, 99, 235, 0.25)")
         )])
         fig_sankey.update_layout(
-            height=560,
+            height=580,
             font=DARK_FONT,
-            margin=dict(l=10, r=10, t=20, b=10),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
+            margin=dict(l=10, r=10, t=20, b=10)
         )
-        st.plotly_chart(fig_sankey, width='stretch')
+        st.plotly_chart(fig_sankey, use_container_width=True)
     else:
-        st.warning("Nenhum registro encontrado para os filtros selecionados.")
+        st.warning("Nenhum dado encontrado para os filtros selecionados.")
 
-elif st.session_state.page_idx == 1:
-    # --------------------------------------------------------------------------
-    # PÁGINA 2: MAPA COROPLÉTICO DE JOINVILLE (TELA CHEIA)
-    # --------------------------------------------------------------------------
-    st.subheader(f"🗺️ Cobertura Geográfica por Bairro de Joinville ({lbl_m})")
+# ------------------------------------------------------------------------------
+# 6. PÁGINA 2: MAPA COROPLÉTICO POR BAIRRO
+# ------------------------------------------------------------------------------
+elif selected_page.startswith("2"):
+    st.subheader(f"🗺️ Distribuição Geográfica por Bairro ({lbl_m})")
     if not df_filtered.empty:
         if usar_soma:
             df_geo = df_filtered.groupby('Bairro_Clean')['Total_Num'].sum().reset_index()
@@ -362,40 +348,44 @@ elif st.session_state.page_idx == 1:
             except Exception:
                 pass
 
-            map_kwargs = dict(
-                data_frame=df_geo,
-                geojson=geojson_data,
-                locations='Bairro_Clean',
-                featureidkey=prop_key,
-                color=val_col,
-                color_continuous_scale="OrRd",
-                center={"lat": -26.3000, "lon": -48.8400},
-                zoom=10.4,
-                opacity=0.65,
-                labels={'Bairro_Clean': 'Bairro', val_col: lbl_m}
-            )
+            map_func = getattr(px, 'choropleth_map', getattr(px, 'choropleth_mapbox', None))
+            style_key = 'map_style' if hasattr(px, 'choropleth_map') else 'mapbox_style'
 
-            if hasattr(px, 'choropleth_map'):
-                try:
-                    fig_map = px.choropleth_map(**map_kwargs, map_style="carto-positron")
-                except Exception:
-                    fig_map = px.choropleth_map(**map_kwargs)
-            elif hasattr(px, 'choropleth_mapbox'):
-                try:
-                    fig_map = px.choropleth_mapbox(**map_kwargs, mapbox_style="carto-positron")
-                except Exception:
-                    fig_map = px.choropleth_mapbox(**map_kwargs)
-            else:
-                fig_map = go.Figure()
+            map_kwargs = {
+                'data_frame': df_geo,
+                'geojson': geojson_data,
+                'locations': 'Bairro_Clean',
+                'featureidkey': prop_key,
+                'color': val_col,
+                'color_continuous_scale': "OrRd",
+                'center': {"lat": -26.3000, "lon": -48.8400},
+                'zoom': 10.5,
+                'opacity': 0.7,
+                'labels': {'Bairro_Clean': 'Bairro', val_col: lbl_m}
+            }
+            map_kwargs[style_key] = "carto-positron"
 
-            fig_map.update_layout(
-                height=580,
-                font=DARK_FONT,
-                margin=dict(l=0, r=0, t=10, b=0),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
-            )
-            st.plotly_chart(fig_map, width='stretch')
+            try:
+                fig_map = map_func(**map_kwargs)
+                fig_map.update_layout(
+                    height=580,
+                    font=DARK_FONT,
+                    margin=dict(l=0, r=0, t=10, b=0),
+                    coloraxis_colorbar=dict(
+                        title=dict(text=lbl_m, font=DARK_FONT),
+                        tickfont=DARK_FONT
+                    )
+                )
+                st.plotly_chart(fig_map, use_container_width=True)
+            except Exception:
+                st.error("Erro ao gerar o mapa com GeoJSON. Exibindo visão em gráfico de barras.")
+                fig_b = px.bar(
+                    df_geo.sort_values(by=val_col, ascending=True),
+                    x=val_col, y='Bairro_Clean', orientation='h',
+                    text_auto=True, color=val_col, color_continuous_scale='Blues'
+                )
+                fig_b.update_layout(height=580, font=DARK_FONT, coloraxis_showscale=False)
+                st.plotly_chart(fig_b, use_container_width=True)
         else:
             coords = {
                 "Centro": [-26.3045, -48.8461], "América": [-26.2890, -48.8475], "Anita Garibaldi": [-26.3190, -48.8520],
@@ -413,29 +403,20 @@ elif st.session_state.page_idx == 1:
 
             fig_map = px.scatter_mapbox(
                 df_geo, lat="Lat", lon="Lon", size=val_col, color=val_col,
-                hover_name="Bairro_Clean", size_max=35, zoom=10.5,
+                hover_name="Bairro_Clean", size_max=35, zoom=10.8,
                 center={"lat": -26.3000, "lon": -48.8400},
-                mapbox_style="carto-positron",
-                color_continuous_scale="OrRd",
+                mapbox_style="carto-positron", color_continuous_scale="OrRd",
                 labels={val_col: lbl_m}
             )
-            fig_map.update_layout(
-                height=580,
-                font=DARK_FONT,
-                margin=dict(l=0, r=0, t=10, b=0),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
-            )
-            st.plotly_chart(fig_map, width='stretch')
-    else:
-        st.warning("Nenhum registro encontrado para os filtros selecionados.")
+            fig_map.update_layout(height=580, font=DARK_FONT, margin=dict(l=0, r=0, t=10, b=0))
+            st.plotly_chart(fig_map, use_container_width=True)
 
-elif st.session_state.page_idx == 2:
-    # --------------------------------------------------------------------------
-    # PÁGINA 3: EVOLUÇÃO TEMPORAL E RANKING DOS BAIRROS
-    # --------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+# 7. PÁGINA 3: EVOLUÇÃO TEMPORAL E RANKING BAIRROS
+# ------------------------------------------------------------------------------
+elif selected_page.startswith("3"):
     c1, c2 = st.columns(2)
-    
+
     with c1:
         st.subheader(f"📈 Evolução Anual por Programa ({lbl_m})")
         if not df_filtered.empty:
@@ -449,20 +430,18 @@ elif st.session_state.page_idx == 2:
             fig_temp = px.bar(
                 df_temp, x='Ano_Val', y=y_col, color='Programa_Clean',
                 barmode='group',
-                labels={'Ano_Val': 'Ano de Execução', y_col: lbl_m, 'Programa_Clean': 'Programa'},
+                labels={'Ano_Val': 'Ano', y_col: lbl_m, 'Programa_Clean': 'Programa'},
                 color_discrete_sequence=px.colors.qualitative.Bold
             )
             fig_temp.update_layout(
-                xaxis=dict(type='category', title="Ano de Execução", tickfont=DARK_FONT),
-                yaxis=dict(title=lbl_m, tickfont=DARK_FONT),
+                xaxis=dict(type='category', title=dict(text="Ano de Execução", font=DARK_FONT), tickfont=DARK_FONT),
+                yaxis=dict(title=dict(text=lbl_m, font=DARK_FONT), tickfont=DARK_FONT),
                 legend=dict(font=DARK_FONT, orientation="h", y=-0.2),
+                height=520,
                 font=DARK_FONT,
-                height=500,
-                margin=dict(l=10, r=10, t=20, b=10),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
+                margin=dict(l=10, r=10, t=10, b=10)
             )
-            st.plotly_chart(fig_temp, width='stretch')
+            st.plotly_chart(fig_temp, use_container_width=True)
 
     with c2:
         st.subheader(f"🏆 Top 15 Bairros Atendidos ({lbl_m})")
@@ -481,19 +460,17 @@ elif st.session_state.page_idx == 2:
                 color=y_val, color_continuous_scale='Blues'
             )
             fig_b.update_layout(
-                xaxis=dict(title=lbl_m, tickfont=DARK_FONT),
-                yaxis=dict(title="Bairro", tickfont=DARK_FONT),
+                xaxis=dict(title=dict(text=lbl_m, font=DARK_FONT), tickfont=DARK_FONT),
+                yaxis=dict(title=dict(text="Bairro", font=DARK_FONT), tickfont=DARK_FONT),
+                height=520,
                 font=DARK_FONT,
-                height=500,
                 coloraxis_showscale=False,
-                margin=dict(l=10, r=10, t=20, b=10),
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)'
+                margin=dict(l=10, r=10, t=10, b=10)
             )
-            st.plotly_chart(fig_b, width='stretch')
+            st.plotly_chart(fig_b, use_container_width=True)
 
-# Lógica de Rotação Automática de Páginas (15s)
+# Lógica de Rotação Automática (15s)
 if auto_rotate:
     time.sleep(15)
-    st.session_state.page_idx = (st.session_state.page_idx + 1) % 3
+    st.session_state.page_index = (st.session_state.page_index + 1) % len(pages)
     st.rerun()

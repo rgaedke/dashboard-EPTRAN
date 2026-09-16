@@ -8,7 +8,7 @@ import os
 import time
 
 # ------------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS DEFINITIVO (FILTROS + DROPDOWNS + CALENDÁRIO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (APENAS CORPO E CARDS, SEM CUSTOMIZAÇÃO NOS FILTROS)
 # ------------------------------------------------------------------------------
 st.set_page_config(
     page_title="Dashboard EPTRAN",
@@ -25,12 +25,7 @@ st.markdown("""
         color: #0F172A !important;
     }
     
-    /* Tipografia com Alto Contraste */
-    h1, h2, h3, h4, h5, h6, p, span, label, div {
-        color: #0F172A !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
-    
+    /* Tipografia de Cabeçalho */
     .main-title {
         color: #0F172A !important;
         font-weight: 800;
@@ -45,71 +40,6 @@ st.markdown("""
         font-weight: 500;
     }
     
-    /* Sidebar Clean */
-    section[data-testid="stSidebar"] {
-        background-color: #FFFFFF !important;
-        border-right: 1px solid #E2E8F0;
-    }
-    
-    /* ==========================================================================
-       CORREÇÃO FORÇADA DE COR DE FUNDO (DROPDOWNS E CALENDÁRIO FORA DA SIDEBAR)
-       ========================================================================== */
-    
-    /* Caixas fechadas na Sidebar */
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
-    section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
-    section[data-testid="stSidebar"] input {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
-    }
-    
-    section[data-testid="stSidebar"] div[data-baseweb="select"] span,
-    section[data-testid="stSidebar"] div[data-baseweb="select"] div {
-        color: #0F172A !important;
-    }
-    
-    /* Dropdowns / Menus Flutuantes Abertos (BaseWeb Popover) */
-    div[data-baseweb="popover"],
-    div[data-baseweb="popover"] *,
-    div[data-baseweb="menu"],
-    div[data-baseweb="menu"] *,
-    ul[role="listbox"],
-    ul[role="listbox"] * {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-    }
-
-    /* Hover e Item Selecionado do Dropdown */
-    li[role="option"]:hover,
-    div[data-baseweb="option"]:hover,
-    div[aria-selected="true"] {
-        background-color: #F1F5F9 !important;
-        color: #0F172A !important;
-    }
-
-    /* Popover do Calendário (DateInput) */
-    div[data-baseweb="calendar"],
-    div[data-baseweb="calendar"] *,
-    div[data-baseweb="calendar"] header,
-    div[data-baseweb="calendar"] header * {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-    }
-    
-    /* Dias do calendário e botões */
-    div[data-baseweb="calendar"] button {
-        color: #0F172A !important;
-        background-color: #FFFFFF !important;
-    }
-    div[data-baseweb="calendar"] button:hover {
-        background-color: #F1F5F9 !important;
-    }
-    div[data-baseweb="calendar"] [aria-selected="true"] {
-        background-color: #2563EB !important;
-        color: #FFFFFF !important;
-    }
-
     /* Cartões de KPI */
     div[data-testid="stMetric"] {
         background-color: #FFFFFF !important;
@@ -232,7 +162,7 @@ def load_data():
 df = load_data()
 
 # ------------------------------------------------------------------------------
-# 3. SIDEBAR: FILTROS E CONTROLES
+# 3. SIDEBAR: FILTROS E CONTROLES (SEM ESTILIZAÇÃO CSS CUSTOMIZADA)
 # ------------------------------------------------------------------------------
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", use_container_width=True)
@@ -325,7 +255,7 @@ total_eventos = len(df_filtered)
 
 if usar_soma:
     val_kpi1 = f"{total_pessoas:,}".replace(',', '.')
-    label_kpi1 = "Pessoas Impactadas (Col M)"
+    label_kpi1 = "Pessoas Impactadas (Coluna M)"
 else:
     val_kpi1 = f"{total_eventos:,}".replace(',', '.')
     label_kpi1 = "Nº de Eventos"

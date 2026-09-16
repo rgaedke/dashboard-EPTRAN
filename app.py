@@ -67,13 +67,20 @@ st.markdown("""
 DARK_FONT = dict(family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color="#0F172A")
 
 # ------------------------------------------------------------------------------
-# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS (LEITURA DA COLUNA M)
+# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
 # ------------------------------------------------------------------------------
 SHEET_ID = "13pLTKJgZRnA6cA4ZaxSZDm7wtvPBbI41Rx-pijOhNK0"
 
 @st.cache_data(ttl=600)
 def load_data():
-    sheet_names = ["Base de Dados_2022", "Base de Dados_2023", "Base de Dados_2024", "Base de Dados_2025", "Base de dados_2026", "PNATRANS"]
+    # Apenas as abas solicitadas com a grafia exata
+    sheet_names = [
+        "Base de Dados_2026",
+        "Base de Dados_2025",
+        "Base de Dados_2024",
+        "Base de Dados_2023",
+        "Base de Dados_2022"
+    ]
     dfs = []
     
     for s in sheet_names:
@@ -83,15 +90,25 @@ def load_data():
             if not t_df.empty:
                 t_df['Origem_Aba'] = s
                 
-                # Leitura direta da Coluna M (índice 12 na contagem zero-based)
-                if t_df.shape[1] >= 13:
-                    col_m = t_df.iloc[:, 12]
-                    t_df['Total_Num'] = pd.to_numeric(
-                        col_m.astype(str).str.replace(r'[^\d]', '', regex=True),
-                        errors='coerce'
-                    ).fillna(0)
+                # Identificação dinâmica da coluna do total de impactados pelo nome do cabeçalho
+                col_total_name = [c for c in t_df.columns if any(k in str(c).lower() for k in ['total', 'impact', 'atend', 'público', 'publico', 'pessoas'])]
+                
+                if col_total_name:
+                    col_target = t_df[col_total_name[0]]
+                elif t_df.shape[1] >= 13:
+                    # Fallback para coluna M (índice 12) caso o nome não corresponda
+                    col_target = t_df.iloc[:, 12]
                 else:
-                    t_df['Total_Num'] = 0.0
+                    col_target = pd.Series([0] * len(t_df))
+                    
+                # Limpeza e conversão numérica preservando pontuações adequadamente
+                cleaned_num = (
+                    col_target.astype(str)
+                    .str.replace('.', '', regex=False)
+                    .str.replace(',', '.', regex=False)
+                    .str.replace(r'[^\d.]', '', regex=True)
+                )
+                t_df['Total_Num'] = pd.to_numeric(cleaned_num, errors='coerce').fillna(0)
                     
                 dfs.append(t_df)
         except Exception:
@@ -145,8 +162,7 @@ def load_data():
     col_data = col_data[0] if col_data else df.columns[0]
 
     df['Data_Parsed'] = pd.to_datetime(df[col_data].astype(str), errors='coerce', dayfirst=True)
-    df['Data_Parsed'] = df['Data_Parsed'].fillna(pd.to_datetime('2022-01-01'))
-    df['Ano_Val'] = df['Data_Parsed'].dt.year.astype(int)
+    df['Ano_Val'] = df['Data_Parsed'].dt.year.fillna(2022).astype(int)
 
     df['Bairro_Clean'] = df[col_bairro].astype(str).str.strip().str.title()
     df['Bairro_Clean'] = df['Bairro_Clean'].replace({'Paraaguamirim': 'Paranaguamirim', 'Jardim Paraiso': 'Jardim Paraíso', 'Aventreiro': 'Aventureiro', 'Nan': 'Não Informado'})
@@ -178,8 +194,10 @@ metrica = st.sidebar.radio(
 )
 usar_soma = (metrica == "👥 Pessoas Impactadas")
 
-min_date = df['Data_Parsed'].min().date()
-max_date = df['Data_Parsed'].max().date()
+# Datas válidas para o filtro
+valid_dates = df['Data_Parsed'].dropna()
+min_date = valid_dates.min().date() if not valid_dates.empty else pd.to_datetime('2022-01-01').date()
+max_date = valid_dates.max().date() if not valid_dates.empty else pd.to_datetime('2026-12-31').date()
 
 start_date, end_date = st.sidebar.date_input(
     "Período de Execução",
@@ -231,7 +249,7 @@ if os.path.exists("bairros.geojson"):
 # ------------------------------------------------------------------------------
 # 4. FILTRAGEM DOS DADOS
 # ------------------------------------------------------------------------------
-mask = (df['Data_Parsed'].dt.date >= start_date) & (df['Data_Parsed'].dt.date <= end_date)
+mask = df['Data_Parsed'].isna() | ((df['Data_Parsed'].dt.date >= start_date) & (df['Data_Parsed'].dt.date <= end_date))
 
 if sel_bairro != "Todos os Bairros":
     mask &= (df['Bairro_Clean'] == sel_bairro)
@@ -255,7 +273,7 @@ total_eventos = len(df_filtered)
 
 if usar_soma:
     val_kpi1 = f"{total_pessoas:,}".replace(',', '.')
-    label_kpi1 = "Pessoas Impactadas (Coluna M)"
+    label_kpi1 = "Pessoas Impactadas"
 else:
     val_kpi1 = f"{total_eventos:,}".replace(',', '.')
     label_kpi1 = "Nº de Eventos"
@@ -275,7 +293,7 @@ else:
 col3.metric("Bairro Destaque", top_b)
 col4.metric("Programa Destaque", top_p)
 
-lbl_m = "Soma de Pessoas (Col M)" if usar_soma else "Nº de Eventos"
+lbl_m = "Soma de Pessoas" if usar_soma else "Nº de Eventos"
 
 # ------------------------------------------------------------------------------
 # 6. PÁGINA 1: SANKEY DIAGRAM

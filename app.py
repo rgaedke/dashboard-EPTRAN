@@ -57,7 +57,7 @@ opcoes_bairro = opcoes_bairro + extras_presentes
 # Barra superior: modo kiosk (autoplay a cada 15s) + navegação manual
 # ---------------------------------------------------------------------------
 if "autoplay" not in st.session_state:
-    st.session_state.autoplay = True
+    st.session_state.autoplay = False  # começa desligado; liga pelo botão ▶
 if "tela_atual" not in st.session_state:
     st.session_state.tela_atual = 0
 

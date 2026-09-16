@@ -19,6 +19,16 @@ def aplicar_estilo():
                 color: {config.COR_TEXTO};
             }}
 
+            /* Remove o fade-in/fade-out padrão do Streamlit a cada rerun
+               (fica perceptível no modo kiosk, com autorefresh a cada 15s),
+               para a troca de tela ser instantânea. */
+            * {{
+                animation-duration: 0s !important;
+                animation-delay: 0s !important;
+                transition-duration: 0s !important;
+                transition-delay: 0s !important;
+            }}
+
             /* Reduz cabeçalho/rodapé padrão do Streamlit e o respiro em
                volta do conteúdo, para caber tudo sem rolagem. */
             header[data-testid="stHeader"] {{
@@ -84,7 +94,7 @@ def barra_navegacao():
     if "tela_atual" not in st.session_state:
         st.session_state.tela_atual = 0
     if "autoplay" not in st.session_state:
-        st.session_state.autoplay = True
+        st.session_state.autoplay = False  # começa desligado; liga pelo botão ▶
 
     col_play, col_nav, col_titulo = st.columns([1.2, 3, 5])
 

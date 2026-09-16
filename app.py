@@ -8,7 +8,7 @@ import os
 import time
 
 # ------------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS REFORÇADO PARA FILTROS E CALENDÁRIO
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS DEFINITIVO (FILTROS + DROPDOWNS + CALENDÁRIO)
 # ------------------------------------------------------------------------------
 st.set_page_config(
     page_title="Dashboard EPTRAN",
@@ -17,16 +17,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilo Visual Completo: Garante Fundo Branco e Letras Escuras em TUDO na Sidebar/Filtros
 st.markdown("""
 <style>
     /* Estilo Geral da Aplicação */
     .stApp {
-        background-color: #F8FAFC;
-        color: #0F172A;
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
     }
     
-    /* Tipografia */
+    /* Tipografia com Alto Contraste */
     h1, h2, h3, h4, h5, h6, p, span, label, div {
         color: #0F172A !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -52,30 +51,36 @@ st.markdown("""
         border-right: 1px solid #E2E8F0;
     }
     
-    /* ------------------------------------------------------------------------
-       CORREÇÃO TOTAL DE FILTROS, SELECTBOX E CALENDÁRIO (DATEINPUT)
-       ------------------------------------------------------------------------ */
+    /* ==========================================================================
+       CORREÇÃO DEFINITIVA DE FILTROS (INPUTS, DROPDOWNS E CALENDÁRIO)
+       ========================================================================== */
     
-    /* Inputs de Texto, Seletores e Data (Caixa Fechada) */
+    /* Caixas fechadas (Inputs e Selects) na Sidebar */
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
     section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
-    section[data-testid="stSidebar"] input,
-    div[data-baseweb="calendar"] {
+    section[data-testid="stSidebar"] input {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
-        border-color: #CBD5E1 !important;
+        border: 1px solid #CBD5E1 !important;
     }
-
-    /* Menus Suspensos / Popovers / Dropdowns ao Clicar (Global) */
+    
+    /* Textos dentro das caixas fechadas */
+    section[data-testid="stSidebar"] div[data-baseweb="select"] span,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] div {
+        color: #0F172A !important;
+    }
+    
+    /* Menus Suspensos / Dropdowns Abertos (Renderizados na Raiz do DOM) */
     div[data-baseweb="popover"],
-    div[data-baseweb="popover"] *,
+    div[data-baseweb="popover"] > div,
     div[data-baseweb="menu"],
     div[data-baseweb="menu"] * {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
     }
 
-    /* Itens de Opção nos Menus */
+    /* Itens da lista do Dropdown */
+    ul[role="listbox"] li,
     div[data-baseweb="option"] {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
@@ -86,24 +91,31 @@ st.markdown("""
         color: #0F172A !important;
     }
 
-    /* Componentes Específicos do Calendário */
+    /* Popover do Calendário (DateInput) */
+    div[data-baseweb="calendar"],
+    div[data-baseweb="calendar"] * {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    
+    /* Botões de navegação e dias do calendário */
     div[data-baseweb="calendar"] button {
         color: #0F172A !important;
         background-color: transparent !important;
     }
     div[data-baseweb="calendar"] button:hover {
-        background-color: #E2E8F0 !important;
+        background-color: #F1F5F9 !important;
     }
     div[data-baseweb="calendar"] [aria-selected="true"] {
-        background-color: #0F172A !important;
+        background-color: #2563EB !important;
         color: #FFFFFF !important;
     }
 
     /* Cartões de KPI */
     div[data-testid="stMetric"] {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-left: 4px solid #0F172A;
+        background-color: #FFFFFF !important;
+        border: 1px solid #E2E8F0 !important;
+        border-left: 4px solid #0F172A !important;
         padding: 14px 18px;
         border-radius: 8px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -126,7 +138,7 @@ st.markdown("""
 DARK_FONT = dict(family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color="#0F172A")
 
 # ------------------------------------------------------------------------------
-# 2. CARREGAMENTO E SOMA DE DADOS (CORRIGIDO PARA MÚLTIPLAS COLUNAS/ABAS)
+# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
 # ------------------------------------------------------------------------------
 SHEET_ID = "13pLTKJgZRnA6cA4ZaxSZDm7wtvPBbI41Rx-pijOhNK0"
 
@@ -142,12 +154,10 @@ def load_data():
             if not t_df.empty and len(t_df.columns) > 2:
                 t_df['Origem_Aba'] = s
                 
-                # Identificação inteligente da coluna de total/impactados por aba
                 possible_total_cols = [c for c in t_df.columns if any(k in str(c).lower() for k in ['total', 'atendidos', 'público', 'publico', 'impactad', 'qtd', 'quantidade'])]
                 
                 if possible_total_cols:
                     tot_col = possible_total_cols[0]
-                    # Limpeza rigorosa convertendo texto/sujeira para número booleano/float
                     t_df['Total_Num'] = pd.to_numeric(
                         t_df[tot_col].astype(str).str.replace(r'[^\d]', '', regex=True),
                         errors='coerce'
@@ -162,7 +172,6 @@ def load_data():
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
     else:
-        # Dados de contingência sintéticos caso a planilha falhe no carregamento
         np.random.seed(42)
         bairros_list = ["Anita Garibaldi", "Jardim Paraíso", "Guanabara", "Parque Guarani", "Glória", "Saguaçu", "América", "Fátima", "Centro", "Jardim Iririú", "Adhemar Garcia", "Costa e Silva", "Bucarein", "Aventureiro", "Vila Nova", "Boehmerwald", "Pirabeiraba", "Itinga", "Floresta", "Comasa"]
         programas_acoes = {
@@ -192,7 +201,6 @@ def load_data():
             })
         df = pd.DataFrame(rows)
 
-    # Identificação padronizada das colunas de texto
     col_prog = [c for c in df.columns if 'prog' in str(c).lower()]
     col_prog = col_prog[0] if col_prog else df.columns[0]
     
@@ -208,7 +216,6 @@ def load_data():
     col_data = [c for c in df.columns if 'data' in str(c).lower()]
     col_data = col_data[0] if col_data else df.columns[0]
 
-    # Tratamento de datas e limpeza dos textos
     df['Data_Parsed'] = pd.to_datetime(df[col_data].astype(str), errors='coerce', dayfirst=True)
     df['Data_Parsed'] = df['Data_Parsed'].fillna(pd.to_datetime('2022-01-01'))
     df['Ano_Val'] = df['Data_Parsed'].dt.year.astype(int)
@@ -284,7 +291,7 @@ if 'page_index' not in st.session_state:
 selected_page = st.sidebar.radio("Selecione a Visão", pages, index=st.session_state.page_index)
 st.session_state.page_index = pages.index(selected_page)
 
-# Carregamento do GeoJSON apenas para a Página 2
+# GeoJSON para a página 2
 geojson_data = None
 if os.path.exists("bairros.geojson"):
     try:
@@ -343,7 +350,7 @@ col4.metric("Programa Destaque", top_p)
 lbl_m = "Soma de Pessoas" if usar_soma else "Nº de Eventos"
 
 # ------------------------------------------------------------------------------
-# 6. PÁGINA 1: SANKEY DIAGRAM (CORRIGIDO)
+# 6. PÁGINA 1: SANKEY DIAGRAM
 # ------------------------------------------------------------------------------
 if selected_page.startswith("1"):
     st.subheader(f"📊 Diagrama de Sankey — Fluxo de Atendimento ({lbl_m})")
@@ -357,7 +364,6 @@ if selected_page.startswith("1"):
             df_p_a = df_filtered.groupby(['Programa_Clean', 'Acao_Clean']).size().reset_index(name='Val')
             df_a_pub = df_filtered.groupby(['Acao_Clean', 'Publico_Clean']).size().reset_index(name='Val')
 
-        # Filtra apenas fluxos maiores que zero para evitar o diagrama em branco
         df_p_a = df_p_a[df_p_a['Val'] > 0]
         df_a_pub = df_a_pub[df_a_pub['Val'] > 0]
 
@@ -466,7 +472,7 @@ elif selected_page.startswith("2"):
             st.plotly_chart(fig_map, use_container_width=True)
 
 # ------------------------------------------------------------------------------
-# 8. PÁGINA 3: EVOLUÇÃO E RANKING (SEM MAPA - APENAS GRÁFICOS)
+# 8. PÁGINA 3: EVOLUÇÃO E RANKING
 # ------------------------------------------------------------------------------
 elif selected_page.startswith("3"):
     c1, c2 = st.columns(2)

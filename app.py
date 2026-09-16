@@ -6,9 +6,10 @@ import plotly.graph_objects as go
 import json
 import os
 import time
+import unicodedata
 
 # ------------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (APENAS CORPO E CARDS, SEM CUSTOMIZAÇÃO NOS FILTROS)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # ------------------------------------------------------------------------------
 st.set_page_config(
     page_title="Dashboard EPTRAN",
@@ -66,6 +67,12 @@ st.markdown("""
 
 DARK_FONT = dict(family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color="#0F172A")
 
+def normalize_text(text):
+    """Remove acentos e caracteres especiais para busca flexível de colunas."""
+    if not isinstance(text, str):
+        return ""
+    return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
+
 # ------------------------------------------------------------------------------
 # 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
 # ------------------------------------------------------------------------------
@@ -73,7 +80,6 @@ SHEET_ID = "13pLTKJgZRnA6cA4ZaxSZDm7wtvPBbI41Rx-pijOhNK0"
 
 @st.cache_data(ttl=600)
 def load_data():
-    # Apenas as abas solicitadas com a grafia exata
     sheet_names = [
         "Base de Dados_2026",
         "Base de Dados_2025",
@@ -87,21 +93,34 @@ def load_data():
         try:
             url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={s}"
             t_df = pd.read_csv(url, header=0)
+            
+            # Garante a leitura de todas as linhas não nulas da aba
             if not t_df.empty:
+                # Descarta linhas completamente vazias que possam ter vindo do Google Sheets
+                t_df = t_df.dropna(how='all').copy()
                 t_df['Origem_Aba'] = s
                 
-                # Identificação dinâmica da coluna do total de impactados pelo nome do cabeçalho
-                col_total_name = [c for c in t_df.columns if any(k in str(c).lower() for k in ['total', 'impact', 'atend', 'público', 'publico', 'pessoas'])]
-                
-                if col_total_name:
-                    col_target = t_df[col_total_name[0]]
+                # Procura exata e flexível pelo cabeçalho "Total – Dia"
+                col_found = None
+                for col in t_df.columns:
+                    col_str = str(col).strip()
+                    # Verifica correspondência exata ou variantes com hífens/travessões
+                    if col_str in ["Total – Dia", "Total - Dia", "Total–Dia", "Total-Dia"]:
+                        col_found = col
+                        break
+                    elif "total" in normalize_text(col_str) and "dia" in normalize_text(col_str):
+                        col_found = col
+                        break
+
+                if col_found is not None:
+                    col_target = t_df[col_found]
                 elif t_df.shape[1] >= 13:
-                    # Fallback para coluna M (índice 12) caso o nome não corresponda
+                    # Fallback para Coluna M (índice 12)
                     col_target = t_df.iloc[:, 12]
                 else:
                     col_target = pd.Series([0] * len(t_df))
                     
-                # Limpeza e conversão numérica preservando pontuações adequadamente
+                # Tratamento rigoroso da coluna numérica (preserva inteiros e decimais)
                 cleaned_num = (
                     col_target.astype(str)
                     .str.replace('.', '', regex=False)
@@ -111,65 +130,55 @@ def load_data():
                 t_df['Total_Num'] = pd.to_numeric(cleaned_num, errors='coerce').fillna(0)
                     
                 dfs.append(t_df)
-        except Exception:
-            pass
+        except Exception as e:
+            st.warning(f"Atenção ao carregar a aba {s}: {e}")
             
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
     else:
-        np.random.seed(42)
-        bairros_list = ["Anita Garibaldi", "Jardim Paraíso", "Guanabara", "Parque Guarani", "Glória", "Saguaçu", "América", "Fátima", "Centro", "Jardim Iririú", "Adhemar Garcia", "Costa e Silva", "Bucarein", "Aventureiro", "Vila Nova", "Boehmerwald", "Pirabeiraba", "Itinga", "Floresta", "Comasa"]
-        programas_acoes = {
-            "EPTRAN na Escola": ["Criança Atenta", "Trânsito e Cidadania", "Aluno Guia", "Contação de História", "Minipista"],
-            "Blitz Educativas": ["Joinville em 2 Rodas", "Bebida e Direção", "Pedestres", "Criança Segura"],
-            "Palestras e Dinâmicas": ["Visão Segura: Dirigir com Responsabilidade", "Não Seja Uma Vítima"],
-            "Distribuição de Materiais Educativos": ["Blocos - Criança Atenta", "Bebida e Direção"],
-            "Cursos e Capacitações": ["Capacitação GM e Agentes"],
-            "Outros Eventos": ["Comando Itinerante", "Respeite Essa Vaga", "Passeio Ciclístico"]
-        }
-        publicos = ["Alunos", "Adulto", "Público em Geral", "Ciclistas", "Motoristas", "Criança"]
-        rows = []
-        dates = pd.date_range(start="2022-01-01", end="2026-08-31", freq="W")
-        for d in dates:
-            prog = np.random.choice(list(programas_acoes.keys()))
-            acao = np.random.choice(programas_acoes[prog])
-            bairro = np.random.choice(bairros_list)
-            pub = np.random.choice(publicos)
-            qtd = float(np.random.choice([25, 40, 60, 100, 120, 180, 250, 350, 500, 1200]))
-            rows.append({
-                "Data": d.strftime("%d/%m/%Y"),
-                "Programa": prog,
-                "Ação": acao,
-                "Bairro": bairro,
-                "Público": pub,
-                "Total_Num": qtd
-            })
-        df = pd.DataFrame(rows)
+        df = pd.DataFrame()
 
-    col_prog = [c for c in df.columns if 'prog' in str(c).lower()]
+    if df.empty:
+        return df
+
+    # Identificação flexível das colunas principais
+    col_prog = [c for c in df.columns if 'prog' in normalize_text(str(c))]
     col_prog = col_prog[0] if col_prog else df.columns[0]
     
-    col_acao = [c for c in df.columns if any(k in str(c).lower() for k in ['ação', 'acao', 'projeto'])]
-    col_acao = col_acao[0] if col_acao else df.columns[1]
+    col_acao = [c for c in df.columns if any(k in normalize_text(str(c)) for k in ['acao', 'projeto'])]
+    col_acao = col_acao[0] if col_acao else (df.columns[1] if len(df.columns) > 1 else df.columns[0])
 
-    col_bairro = [c for c in df.columns if 'bairro' in str(c).lower()]
-    col_bairro = col_bairro[0] if col_bairro else df.columns[2]
+    col_bairro = [c for c in df.columns if 'bairro' in normalize_text(str(c))]
+    col_bairro = col_bairro[0] if col_bairro else (df.columns[2] if len(df.columns) > 2 else df.columns[0])
 
-    col_pub = [c for c in df.columns if any(k in str(c).lower() for k in ['público', 'publico', 'alvo', 'perfil'])]
-    col_pub = col_pub[0] if col_pub else df.columns[3]
+    col_pub = [c for c in df.columns if any(k in normalize_text(str(c)) for k in ['publico', 'alvo', 'perfil'])]
+    col_pub = col_pub[0] if col_pub else (df.columns[3] if len(df.columns) > 3 else df.columns[0])
 
-    col_data = [c for c in df.columns if 'data' in str(c).lower()]
+    col_data = [c for c in df.columns if 'data' in normalize_text(str(c))]
     col_data = col_data[0] if col_data else df.columns[0]
 
+    # Parsing seguro de Datas
     df['Data_Parsed'] = pd.to_datetime(df[col_data].astype(str), errors='coerce', dayfirst=True)
-    df['Ano_Val'] = df['Data_Parsed'].dt.year.fillna(2022).astype(int)
+    
+    # Preenche o ano a partir da dataparsed ou tenta extrair do nome da aba (ex: "Base de Dados_2024")
+    df['Ano_Val'] = df['Data_Parsed'].dt.year
+    df['Ano_Val'] = df['Ano_Val'].fillna(
+        df['Origem_Aba'].str.extract(r'(\d{4})')[0].astype(float)
+    ).fillna(2022).astype(int)
 
     df['Bairro_Clean'] = df[col_bairro].astype(str).str.strip().str.title()
-    df['Bairro_Clean'] = df['Bairro_Clean'].replace({'Paraaguamirim': 'Paranaguamirim', 'Jardim Paraiso': 'Jardim Paraíso', 'Aventreiro': 'Aventureiro', 'Nan': 'Não Informado'})
+    df['Bairro_Clean'] = df['Bairro_Clean'].replace({
+        'Paraaguamirim': 'Paranaguamirim', 
+        'Jardim Paraiso': 'Jardim Paraíso', 
+        'Aventreiro': 'Aventureiro', 
+        'Nan': 'Não Informado',
+        'None': 'Não Informado',
+        '': 'Não Informado'
+    })
     
-    df['Programa_Clean'] = df[col_prog].astype(str).str.strip()
-    df['Acao_Clean'] = df[col_acao].astype(str).str.strip()
-    df['Publico_Clean'] = df[col_pub].astype(str).str.strip()
+    df['Programa_Clean'] = df[col_prog].astype(str).str.strip().replace({'nan': 'Não Informado', '': 'Não Informado'})
+    df['Acao_Clean'] = df[col_acao].astype(str).str.strip().replace({'nan': 'Não Informado', '': 'Não Informado'})
+    df['Publico_Clean'] = df[col_pub].astype(str).str.strip().replace({'nan': 'Não Informado', '': 'Não Informado'})
     
     df['Total_Num'] = df['Total_Num'].fillna(0).astype(float)
 
@@ -178,7 +187,7 @@ def load_data():
 df = load_data()
 
 # ------------------------------------------------------------------------------
-# 3. SIDEBAR: FILTROS E CONTROLES (SEM ESTILIZAÇÃO CSS CUSTOMIZADA)
+# 3. SIDEBAR: FILTROS E CONTROLES
 # ------------------------------------------------------------------------------
 if os.path.exists("logo.png"):
     st.sidebar.image("logo.png", use_container_width=True)
@@ -194,8 +203,8 @@ metrica = st.sidebar.radio(
 )
 usar_soma = (metrica == "👥 Pessoas Impactadas")
 
-# Datas válidas para o filtro
-valid_dates = df['Data_Parsed'].dropna()
+# Cálculo do intervalo do filtro de data
+valid_dates = df['Data_Parsed'].dropna() if not df.empty else pd.Series()
 min_date = valid_dates.min().date() if not valid_dates.empty else pd.to_datetime('2022-01-01').date()
 max_date = valid_dates.max().date() if not valid_dates.empty else pd.to_datetime('2026-12-31').date()
 
@@ -206,17 +215,17 @@ start_date, end_date = st.sidebar.date_input(
     max_value=max_date
 )
 
-bairros_unicos = ["Todos os Bairros"] + sorted([b for b in df['Bairro_Clean'].unique() if b and b != 'Nan'])
+bairros_unicos = ["Todos os Bairros"] + sorted([b for b in df['Bairro_Clean'].unique() if b and b not in ['Nan', 'Não Informado']])
 sel_bairro = st.sidebar.selectbox("Bairro", bairros_unicos)
 
-programas_unicos = ["Todos os Programas"] + sorted([p for p in df['Programa_Clean'].unique() if p])
+programas_unicos = ["Todos os Programas"] + sorted([p for p in df['Programa_Clean'].unique() if p and p != 'Não Informado'])
 sel_prog = st.sidebar.selectbox("Programa", programas_unicos)
 
 if sel_prog != "Todos os Programas":
     df_sub = df[df['Programa_Clean'] == sel_prog]
-    acoes_unicas = ["Todas as Ações"] + sorted([a for a in df_sub['Acao_Clean'].unique() if a])
+    acoes_unicas = ["Todas as Ações"] + sorted([a for a in df_sub['Acao_Clean'].unique() if a and a != 'Não Informado'])
 else:
-    acoes_unicas = ["Todas as Ações"] + sorted([a for a in df['Acao_Clean'].unique() if a])
+    acoes_unicas = ["Todas as Ações"] + sorted([a for a in df['Acao_Clean'].unique() if a and a != 'Não Informado'])
 
 sel_acao = st.sidebar.selectbox("Ação / Projeto", acoes_unicas)
 
@@ -247,9 +256,15 @@ if os.path.exists("bairros.geojson"):
         pass
 
 # ------------------------------------------------------------------------------
-# 4. FILTRAGEM DOS DADOS
+# 4. FILTRAGEM DOS DADOS (SEM PERDER LINHAS COM DATAS AUSENTES QUANDO FILTRO FOR AMPLO)
 # ------------------------------------------------------------------------------
-mask = df['Data_Parsed'].isna() | ((df['Data_Parsed'].dt.date >= start_date) & (df['Data_Parsed'].dt.date <= end_date))
+# Se o filtro abrange todo o período disponível, mantemos também as linhas com data nula
+is_full_range = (start_date <= min_date) and (end_date >= max_date)
+
+if is_full_range:
+    mask = pd.Series(True, index=df.index)
+else:
+    mask = df['Data_Parsed'].isna() | ((df['Data_Parsed'].dt.date >= start_date) & (df['Data_Parsed'].dt.date <= end_date))
 
 if sel_bairro != "Todos os Bairros":
     mask &= (df['Bairro_Clean'] == sel_bairro)
@@ -273,7 +288,7 @@ total_eventos = len(df_filtered)
 
 if usar_soma:
     val_kpi1 = f"{total_pessoas:,}".replace(',', '.')
-    label_kpi1 = "Pessoas Impactadas"
+    label_kpi1 = "Pessoas Impactadas (Total – Dia)"
 else:
     val_kpi1 = f"{total_eventos:,}".replace(',', '.')
     label_kpi1 = "Nº de Eventos"

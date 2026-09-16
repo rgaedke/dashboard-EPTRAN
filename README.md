@@ -16,6 +16,7 @@ geo_utils.py                  # normalização de nomes de bairro + geojson
 charts.py                     # gráficos (Sankey, mapa, evolução, Top 15)
 ui.py                         # filtros, cards de KPI, barra de navegação
 bairros.geojson               # malha geográfica dos bairros
+logo.png                      # logo exibida na barra lateral (adicione o seu)
 dados_locais_teste.ods        # cópia local da planilha, só para testes
 requirements.txt
 .streamlit/config.toml        # tema visual
@@ -108,6 +109,31 @@ implementadas em `data_processing.py` / `geo_utils.py` / `config.py`:
   coluna interna `peso` (soma de "Total - Dia" ou contagem de linhas,
   respectivamente), usada de forma consistente em todos os gráficos e
   cards.
+
+## Ajustes de layout e cores (última atualização)
+
+- **Logo**: a barra lateral agora mostra `logo.png` (coloque o arquivo na
+  raiz do repositório, junto de `app.py`). Se o arquivo não existir, o
+  app cai de volta automaticamente para o título em texto, sem quebrar.
+- **Filtros compactos**: Bairro, Programa e Ação agora são um botão
+  (popover) que só abre a lista ao ser clicado, mostrando só a contagem
+  de itens selecionados quando fechado (ex.: "Bairro · 3 selecionado(s)").
+  Deixar um filtro **sem nenhum item marcado equivale a "todos"** — não
+  precisa marcar tudo manualmente.
+- **Menos rolagem**: o cabeçalho e o menu padrão do Streamlit foram
+  ocultados (CSS em `ui.aplicar_estilo()`), e as alturas dos gráficos
+  ficaram fixas em `config.py` (`ALTURA_SANKEY`, `ALTURA_MAPA`,
+  `ALTURA_GRAFICO_SECUNDARIO`). Se ainda sobrar ou faltar espaço no seu
+  monitor/TV, ajuste só esses três números — não precisa mexer em
+  `charts.py`.
+  - **Atenção**: como o cabeçalho do Streamlit ficou oculto, o botão
+    "Manage app" não aparece mais dentro do próprio dashboard. Para ver
+    logs ou gerenciar o app, acesse [share.streamlit.io](https://share.streamlit.io)
+    diretamente. Para reverter isso, basta remover o bloco
+    `header[data-testid="stHeader"]` do CSS em `ui.py`.
+- **Cores dos gráficos**: Sankey, evolução mensal e Top 15 bairros agora
+  usam a escala azul petróleo (`config.ESCALA_AZUL_PETROLEO`) em vez de
+  uma cor única — quanto maior o valor, mais escuro/intenso o azul.
 
 ## Observações técnicas
 

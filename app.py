@@ -66,7 +66,6 @@ if st.session_state.autoplay:
     st.session_state.tela_atual = contador % 3
 
 tela_atual = ui.barra_navegacao()
-st.divider()
 
 
 # ---------------------------------------------------------------------------

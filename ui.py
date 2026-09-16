@@ -18,6 +18,31 @@ def aplicar_estilo():
                 background-color: {config.COR_FUNDO};
                 color: {config.COR_TEXTO};
             }}
+
+            /* Reduz cabeçalho/rodapé padrão do Streamlit e o respiro em
+               volta do conteúdo, para caber tudo sem rolagem. */
+            header[data-testid="stHeader"] {{
+                height: 0rem;
+                min-height: 0rem;
+            }}
+            div[data-testid="stToolbar"], #MainMenu, footer {{
+                display: none;
+                visibility: hidden;
+            }}
+            .block-container {{
+                padding-top: 0.8rem;
+                padding-bottom: 0.5rem;
+            }}
+            section[data-testid="stSidebar"] .block-container {{
+                padding-top: 1.2rem;
+            }}
+            div[data-testid="stVerticalBlock"] {{
+                gap: 0.5rem;
+            }}
+            div[data-testid="stMainBlockContainer"] hr {{
+                margin: 0.4rem 0;
+            }}
+
             section[data-testid="stSidebar"] {{
                 background-color: {config.COR_FUNDO_ALT};
                 border-right: 1px solid {config.COR_BORDA};
@@ -26,15 +51,27 @@ def aplicar_estilo():
                 background-color: {config.COR_FUNDO_ALT};
                 border: 1px solid {config.COR_BORDA};
                 border-radius: 10px;
-                padding: 14px 18px;
+                padding: 10px 16px;
             }}
             div[data-testid="stMetricValue"] {{
                 color: {config.AZUL_ESCURO};
             }}
-            h1, h2, h3 {{
+            h1, h2, h3, h4 {{
+                color: {config.AZUL_PETROLEO};
+                margin-top: 0rem;
+                margin-bottom: 0.3rem;
+            }}
+
+            /* Botões (Play/Pause e popovers de filtro) na paleta do projeto */
+            .stButton > button, .stPopover > button {{
+                border-color: {config.AZUL_PETROLEO};
                 color: {config.AZUL_PETROLEO};
             }}
-            #MainMenu, footer {{visibility: hidden;}}
+            .stButton > button:hover, .stPopover > button:hover {{
+                border-color: {config.AZUL_ESCURO};
+                color: {config.AZUL_ESCURO};
+                background-color: {config.COR_FUNDO_ALT};
+            }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -79,10 +116,39 @@ def barra_navegacao():
     return st.session_state.tela_atual
 
 
+def _cabecalho_sidebar():
+    """Mostra o logo (config.LOGO_PATH); se o arquivo não existir, cai de
+    volta para um título em texto, sem quebrar o app."""
+    try:
+        st.sidebar.image(str(config.LOGO_PATH), use_container_width=True)
+    except Exception:
+        st.sidebar.markdown("## 🚦 Dashboard EPTRAN")
+
+
+def _multiselect_compacto(rotulo: str, opcoes: list, key: str) -> list:
+    """Filtro em formato de dropdown compacto: um botão (popover) com a
+    contagem de itens selecionados, que só expande a lista ao ser clicado.
+    Seleção vazia é tratada como 'todos' pelo chamador."""
+    n_sel = len(st.session_state.get(key, []))
+    resumo = "Todos" if n_sel == 0 else f"{n_sel} selecionado(s)"
+    with st.sidebar.popover(f"{rotulo} · {resumo}", use_container_width=True):
+        selecao = st.multiselect(
+            rotulo, options=opcoes, key=key, label_visibility="collapsed"
+        )
+    return selecao
+
+
+def _efetivo(selecionado: list, opcoes: list) -> list:
+    """Lista vazia (nada marcado no filtro) equivale a 'sem filtro' = todos
+    os itens disponíveis."""
+    return selecionado if selecionado else opcoes
+
+
 def filtros_globais(df: pd.DataFrame, opcoes_bairro: list):
-    """Renderiza os filtros na barra lateral e devolve os valores escolhidos."""
-    st.sidebar.markdown("## 🚦 Dashboard EPTRAN")
-    st.sidebar.markdown("### Filtros")
+    """Renderiza os filtros na barra lateral (em formato compacto) e
+    devolve os valores já efetivos (lista vazia = nenhum filtro = todos)."""
+    _cabecalho_sidebar()
+    st.sidebar.markdown("##### Filtros")
 
     metrica = st.sidebar.radio(
         "Métrica",
@@ -106,28 +172,23 @@ def filtros_globais(df: pd.DataFrame, opcoes_bairro: list):
     if not isinstance(periodo, (list, tuple)) or len(periodo) != 2:
         periodo = (data_min, data_max)
 
-    bairros_sel = st.sidebar.multiselect(
-        "Bairro", options=opcoes_bairro, default=opcoes_bairro
-    )
+    bairros_sel = _multiselect_compacto("Bairro", opcoes_bairro, "filtro_bairro")
 
     programas_disponiveis = sorted(df["programa"].dropna().unique())
-    programas_sel = st.sidebar.multiselect(
-        "Programa", options=programas_disponiveis, default=programas_disponiveis
-    )
+    programas_sel = _multiselect_compacto("Programa", programas_disponiveis, "filtro_programa")
+    programas_efetivo = _efetivo(programas_sel, programas_disponiveis)
 
     acoes_disponiveis = sorted(
-        df.loc[df["programa"].isin(programas_sel), "acao"].dropna().unique()
+        df.loc[df["programa"].isin(programas_efetivo), "acao"].dropna().unique()
     )
-    acoes_sel = st.sidebar.multiselect(
-        "Ação", options=acoes_disponiveis, default=acoes_disponiveis
-    )
+    acoes_sel = _multiselect_compacto("Ação", acoes_disponiveis, "filtro_acao")
 
     return {
         "metrica": metrica,
         "periodo": periodo,
-        "bairros": bairros_sel,
-        "programas": programas_sel,
-        "acoes": acoes_sel,
+        "bairros": _efetivo(bairros_sel, opcoes_bairro),
+        "programas": programas_efetivo,
+        "acoes": _efetivo(acoes_sel, acoes_disponiveis),
     }
 
 

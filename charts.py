@@ -8,19 +8,23 @@ import plotly.graph_objects as go
 import config
 
 
-def _layout_padrao(fig, titulo=None):
+def _layout_padrao(fig, titulo=None, altura=None):
     fig.update_layout(
         title=titulo,
         paper_bgcolor=config.COR_FUNDO,
         plot_bgcolor=config.COR_FUNDO,
         font=dict(color=config.COR_TEXTO, family="Segoe UI, Arial, sans-serif"),
-        margin=dict(l=10, r=10, t=50 if titulo else 20, b=10),
+        margin=dict(l=10, r=10, t=44 if titulo else 16, b=10),
+        height=altura,
     )
     return fig
 
 
 def grafico_sankey(df: pd.DataFrame):
-    """Programa -> Ação -> Público, ponderado pela coluna 'peso'."""
+    """Programa -> Ação -> Público, ponderado pela coluna 'peso'.
+    As cores seguem a escala azul petróleo por nível (Programa mais escuro
+    -> Ação -> Público mais claro), e os links herdam a cor do nó de
+    origem para facilitar visualmente o acompanhamento de cada fluxo."""
     if df.empty:
         return None
 
@@ -39,24 +43,43 @@ def grafico_sankey(df: pd.DataFrame):
 
     labels = programas + acoes + publicos
 
-    def cor_no(i):
-        if i < off_acao:
-            return config.AZUL_ESCURO
-        if i < off_publico:
-            return config.AZUL_PETROLEO
-        return config.AZUL_MEDIO
+    # Gradiente por nível: cada bloco de nós (Programa / Ação / Público)
+    # recebe uma cor um pouco diferente dentro da paleta azul petróleo,
+    # em vez de tudo na mesma cor.
+    def _gradiente(n, cor_ini, cor_fim):
+        def _hex_to_rgb(h):
+            h = h.lstrip("#")
+            return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
 
-    cores_nos = [cor_no(i) for i in range(len(labels))]
+        def _rgb_to_hex(rgb):
+            return "#" + "".join(f"{max(0, min(255, int(c))):02X}" for c in rgb)
 
-    source, target, value = [], [], []
+        ini, fim = _hex_to_rgb(cor_ini), _hex_to_rgb(cor_fim)
+        if n <= 1:
+            return [cor_ini]
+        return [
+            _rgb_to_hex(tuple(ini[k] + (fim[k] - ini[k]) * i / (n - 1) for k in range(3)))
+            for i in range(n)
+        ]
+
+    cores_programa = _gradiente(len(programas), config.AZUL_ESCURO, config.AZUL_PETROLEO)
+    cores_acao = _gradiente(len(acoes), config.AZUL_PETROLEO, config.AZUL_MEDIO)
+    cores_publico = _gradiente(len(publicos), config.AZUL_MEDIO, config.AZUL_CLARO)
+    cores_nos = cores_programa + cores_acao + cores_publico
+
+    source, target, value, cor_link = [], [], [], []
     for r in nivel1.itertuples(index=False):
-        source.append(idx_programa[r.programa])
+        i_prog = idx_programa[r.programa]
+        source.append(i_prog)
         target.append(idx_acao[r.acao])
         value.append(r.peso)
+        cor_link.append(cores_nos[i_prog] + "80")  # com transparência
     for r in nivel2.itertuples(index=False):
-        source.append(idx_acao[r.acao])
+        i_acao = idx_acao[r.acao]
+        source.append(i_acao)
         target.append(idx_publico[r.publico])
         value.append(r.peso)
+        cor_link.append(cores_nos[i_acao] + "80")
 
     fig = go.Figure(
         go.Sankey(
@@ -68,15 +91,10 @@ def grafico_sankey(df: pd.DataFrame):
                 thickness=16,
                 line=dict(color=config.COR_BORDA, width=0.5),
             ),
-            link=dict(
-                source=source,
-                target=target,
-                value=value,
-                color=config.AZUL_CLARO + "55",  # com transparência
-            ),
+            link=dict(source=source, target=target, value=value, color=cor_link),
         )
     )
-    return _layout_padrao(fig)
+    return _layout_padrao(fig, altura=config.ALTURA_SANKEY)
 
 
 def grafico_mapa_coropletico(df_explodido: pd.DataFrame, geojson: dict):
@@ -109,12 +127,15 @@ def grafico_mapa_coropletico(df_explodido: pd.DataFrame, geojson: dict):
     fig.update_layout(
         paper_bgcolor=config.COR_FUNDO,
         margin=dict(l=0, r=0, t=0, b=0),
+        height=config.ALTURA_MAPA,
         coloraxis_colorbar=dict(title=""),
     )
     return fig
 
 
 def grafico_evolucao_temporal(df: pd.DataFrame):
+    """Barras coloridas em escala de azul petróleo conforme o valor de
+    cada período — quanto maior o valor, mais escuro/intenso o azul."""
     if df.empty:
         return None
     dados = df.dropna(subset=["data"]).copy()
@@ -123,15 +144,18 @@ def grafico_evolucao_temporal(df: pd.DataFrame):
 
     fig = px.bar(
         serie, x="ano_mes", y="peso",
-        color_discrete_sequence=[config.AZUL_PETROLEO],
+        color="peso",
+        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
     )
-    fig.update_traces(marker_color=config.AZUL_PETROLEO)
+    fig.update_coloraxes(showscale=False)
     fig.update_xaxes(title="Período")
     fig.update_yaxes(title="")
-    return _layout_padrao(fig, "Evolução mensal")
+    return _layout_padrao(fig, "Evolução mensal", altura=config.ALTURA_GRAFICO_SECUNDARIO)
 
 
 def grafico_top15_bairros(df_explodido: pd.DataFrame):
+    """Barras horizontais em escala de azul petróleo conforme o valor de
+    cada bairro — o 1º colocado fica mais escuro/intenso."""
     if df_explodido.empty:
         return None
     agrupado = (
@@ -143,9 +167,10 @@ def grafico_top15_bairros(df_explodido: pd.DataFrame):
     )
     fig = px.bar(
         agrupado, x="valor", y="bairro_oficial", orientation="h",
-        color_discrete_sequence=[config.AZUL_MEDIO],
+        color="valor",
+        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
     )
-    fig.update_traces(marker_color=config.AZUL_MEDIO)
+    fig.update_coloraxes(showscale=False)
     fig.update_xaxes(title="")
     fig.update_yaxes(title="")
-    return _layout_padrao(fig, "Top 15 bairros")
+    return _layout_padrao(fig, "Top 15 bairros", altura=config.ALTURA_GRAFICO_SECUNDARIO)

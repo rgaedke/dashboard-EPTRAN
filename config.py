@@ -36,6 +36,9 @@ LOCAL_ODS_PATH = BASE_DIR / "dados_locais_teste.ods"
 # Malha geográfica dos bairros (arquivo local, conforme a especificação)
 GEOJSON_PATH = BASE_DIR / "bairros.geojson"
 
+# Logo exibida no topo da barra lateral (arquivo na raiz do repositório)
+LOGO_PATH = BASE_DIR / "logo.png"
+
 # Tempo (segundos) que os dados ficam em cache antes de recarregar da planilha
 CACHE_TTL_SEGUNDOS = 600
 
@@ -122,3 +125,11 @@ NOMES_TELAS = [
 # Centro aproximado de Joinville/SC, usado no mapa
 JOINVILLE_LAT = -26.3045
 JOINVILLE_LON = -48.8487
+
+# ---------------------------------------------------------------------------
+# Alturas (em pixels) dos gráficos — ajuste aqui se ainda sobrar/faltar
+# espaço na tela do seu monitor/TV do modo kiosk.
+# ---------------------------------------------------------------------------
+ALTURA_SANKEY = 460
+ALTURA_MAPA = 560
+ALTURA_GRAFICO_SECUNDARIO = 400  # evolução temporal e Top 15 (Tela 3)

@@ -8,7 +8,7 @@ import os
 import time
 
 # ------------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS CLEAN / CONTRASTE GARANTIDO NOS FILTROS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS REFORÇADO PARA FILTROS E CALENDÁRIO
 # ------------------------------------------------------------------------------
 st.set_page_config(
     page_title="Dashboard EPTRAN",
@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilo Visual: Fundo Claro com Filtros Brancos e Letras Escuras
+# Estilo Visual Completo: Garante Fundo Branco e Letras Escuras em TUDO na Sidebar/Filtros
 st.markdown("""
 <style>
     /* Estilo Geral da Aplicação */
@@ -26,7 +26,7 @@ st.markdown("""
         color: #0F172A;
     }
     
-    /* Tipografia com Alto Contraste */
+    /* Tipografia */
     h1, h2, h3, h4, h5, h6, p, span, label, div {
         color: #0F172A !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -52,29 +52,51 @@ st.markdown("""
         border-right: 1px solid #E2E8F0;
     }
     
-    /* CORREÇÃO VISUAL DOS FILTROS (Fundo claro + Texto escuro) */
+    /* ------------------------------------------------------------------------
+       CORREÇÃO TOTAL DE FILTROS, SELECTBOX E CALENDÁRIO (DATEINPUT)
+       ------------------------------------------------------------------------ */
+    
+    /* Inputs de Texto, Seletores e Data (Caixa Fechada) */
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
     section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
-    section[data-testid="stSidebar"] input {
+    section[data-testid="stSidebar"] input,
+    div[data-baseweb="calendar"] {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
         border-color: #CBD5E1 !important;
     }
-    
-    /* Dropdown do Selectbox */
-    div[data-baseweb="popover"] div,
-    div[data-baseweb="menu"] {
+
+    /* Menus Suspensos / Popovers / Dropdowns ao Clicar (Global) */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] *,
+    div[data-baseweb="menu"],
+    div[data-baseweb="menu"] * {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
     }
-    
-    /* Itens dentro do menu do Selectbox */
+
+    /* Itens de Opção nos Menus */
     div[data-baseweb="option"] {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
     }
-    div[data-baseweb="option"]:hover {
+    div[data-baseweb="option"]:hover,
+    div[data-baseweb="option"][aria-selected="true"] {
         background-color: #F1F5F9 !important;
+        color: #0F172A !important;
+    }
+
+    /* Componentes Específicos do Calendário */
+    div[data-baseweb="calendar"] button {
+        color: #0F172A !important;
+        background-color: transparent !important;
+    }
+    div[data-baseweb="calendar"] button:hover {
+        background-color: #E2E8F0 !important;
+    }
+    div[data-baseweb="calendar"] [aria-selected="true"] {
+        background-color: #0F172A !important;
+        color: #FFFFFF !important;
     }
 
     /* Cartões de KPI */
@@ -104,13 +126,12 @@ st.markdown("""
 DARK_FONT = dict(family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color="#0F172A")
 
 # ------------------------------------------------------------------------------
-# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
+# 2. CARREGAMENTO E SOMA DE DADOS (CORRIGIDO PARA MÚLTIPLAS COLUNAS/ABAS)
 # ------------------------------------------------------------------------------
 SHEET_ID = "13pLTKJgZRnA6cA4ZaxSZDm7wtvPBbI41Rx-pijOhNK0"
 
 @st.cache_data(ttl=600)
 def load_data():
-    df = None
     sheet_names = ["Base de Dados_2022", "Base de Dados_2023", "Base de Dados_2024", "Base de Dados_2025", "Base de dados_2026", "PNATRANS"]
     dfs = []
     
@@ -118,8 +139,22 @@ def load_data():
         try:
             url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={s}"
             t_df = pd.read_csv(url)
-            if not t_df.empty and len(t_df.columns) > 3:
+            if not t_df.empty and len(t_df.columns) > 2:
                 t_df['Origem_Aba'] = s
+                
+                # Identificação inteligente da coluna de total/impactados por aba
+                possible_total_cols = [c for c in t_df.columns if any(k in str(c).lower() for k in ['total', 'atendidos', 'público', 'publico', 'impactad', 'qtd', 'quantidade'])]
+                
+                if possible_total_cols:
+                    tot_col = possible_total_cols[0]
+                    # Limpeza rigorosa convertendo texto/sujeira para número booleano/float
+                    t_df['Total_Num'] = pd.to_numeric(
+                        t_df[tot_col].astype(str).str.replace(r'[^\d]', '', regex=True),
+                        errors='coerce'
+                    ).fillna(0)
+                else:
+                    t_df['Total_Num'] = 0.0
+                    
                 dfs.append(t_df)
         except Exception:
             pass
@@ -127,24 +162,18 @@ def load_data():
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
     else:
-        try:
-            url_gen = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv"
-            df = pd.read_csv(url_gen)
-        except Exception:
-            df = None
-            
-    if df is None or len(df) == 0:
+        # Dados de contingência sintéticos caso a planilha falhe no carregamento
         np.random.seed(42)
         bairros_list = ["Anita Garibaldi", "Jardim Paraíso", "Guanabara", "Parque Guarani", "Glória", "Saguaçu", "América", "Fátima", "Centro", "Jardim Iririú", "Adhemar Garcia", "Costa e Silva", "Bucarein", "Aventureiro", "Vila Nova", "Boehmerwald", "Pirabeiraba", "Itinga", "Floresta", "Comasa"]
         programas_acoes = {
             "EPTRAN na Escola": ["Criança Atenta", "Trânsito e Cidadania", "Aluno Guia", "Contação de História", "Minipista"],
-            "Blitz Educativas": ["Joinville em 2 Rodas", "Bebida e Direção", "Pedestres", "Criança Segura", "Equipamentos de Mobilidade individual"],
-            "Palestras e Dinâmicas": ["Visão Segura: Dirigir com Responsabilidade", "Equipamentos de Mobilidade individual", "Não Seja Uma Vítima"],
-            "Distribuição de Materiais Educativos": ["Blocos - Criança Atenta", "Bebida e Direção", "Respeite a Mão, Respeite a Vida"],
-            "Cursos e Capacitações": ["Capacitação GM e Agentes", "Curso de Formação – Agentes de Trânsito"],
+            "Blitz Educativas": ["Joinville em 2 Rodas", "Bebida e Direção", "Pedestres", "Criança Segura"],
+            "Palestras e Dinâmicas": ["Visão Segura: Dirigir com Responsabilidade", "Não Seja Uma Vítima"],
+            "Distribuição de Materiais Educativos": ["Blocos - Criança Atenta", "Bebida e Direção"],
+            "Cursos e Capacitações": ["Capacitação GM e Agentes"],
             "Outros Eventos": ["Comando Itinerante", "Respeite Essa Vaga", "Passeio Ciclístico"]
         }
-        publicos = ["Alunos", "Adulto", "Público em Geral", "Ciclistas", "Motoristas", "Criança", "Pré adolescente"]
+        publicos = ["Alunos", "Adulto", "Público em Geral", "Ciclistas", "Motoristas", "Criança"]
         rows = []
         dates = pd.date_range(start="2022-01-01", end="2026-08-31", freq="W")
         for d in dates:
@@ -152,35 +181,46 @@ def load_data():
             acao = np.random.choice(programas_acoes[prog])
             bairro = np.random.choice(bairros_list)
             pub = np.random.choice(publicos)
-            qtd = int(np.random.choice([25, 40, 60, 100, 120, 180, 250, 350, 500, 1200]))
+            qtd = float(np.random.choice([25, 40, 60, 100, 120, 180, 250, 350, 500, 1200]))
             rows.append({
                 "Data": d.strftime("%d/%m/%Y"),
                 "Programa": prog,
                 "Ação": acao,
                 "Bairro": bairro,
                 "Público": pub,
-                "Total – Dia": qtd
+                "Total_Num": qtd
             })
         df = pd.DataFrame(rows)
 
-    col_total = [c for c in df.columns if 'Total' in c or 'Atendidos' in c or 'Público' in c]
-    col_total = col_total[0] if col_total else df.columns[-1]
+    # Identificação padronizada das colunas de texto
+    col_prog = [c for c in df.columns if 'prog' in str(c).lower()]
+    col_prog = col_prog[0] if col_prog else df.columns[0]
+    
+    col_acao = [c for c in df.columns if any(k in str(c).lower() for k in ['ação', 'acao', 'projeto'])]
+    col_acao = col_acao[0] if col_acao else df.columns[1]
 
-    col_prog = 'Programa' if 'Programa' in df.columns else df.columns[0]
-    col_acao = 'Ação' if 'Ação' in df.columns else ('Projeto' if 'Projeto' in df.columns else ('Açao' if 'Açao' in df.columns else df.columns[1]))
-    col_bairro = 'Bairro' if 'Bairro' in df.columns else df.columns[2]
-    col_pub = 'Público' if 'Público' in df.columns else df.columns[3]
+    col_bairro = [c for c in df.columns if 'bairro' in str(c).lower()]
+    col_bairro = col_bairro[0] if col_bairro else df.columns[2]
 
-    df['Total_Num'] = pd.to_numeric(df[col_total].astype(str).str.replace(r'[^\d]', '', regex=True), errors='coerce').fillna(0).astype(float)
-    df['Data_Parsed'] = pd.to_datetime(df['Data'].astype(str), errors='coerce', dayfirst=True)
+    col_pub = [c for c in df.columns if any(k in str(c).lower() for k in ['público', 'publico', 'alvo', 'perfil'])]
+    col_pub = col_pub[0] if col_pub else df.columns[3]
+
+    col_data = [c for c in df.columns if 'data' in str(c).lower()]
+    col_data = col_data[0] if col_data else df.columns[0]
+
+    # Tratamento de datas e limpeza dos textos
+    df['Data_Parsed'] = pd.to_datetime(df[col_data].astype(str), errors='coerce', dayfirst=True)
     df['Data_Parsed'] = df['Data_Parsed'].fillna(pd.to_datetime('2022-01-01'))
     df['Ano_Val'] = df['Data_Parsed'].dt.year.astype(int)
 
     df['Bairro_Clean'] = df[col_bairro].astype(str).str.strip().str.title()
-    df['Bairro_Clean'] = df['Bairro_Clean'].replace({'Paraaguamirim': 'Paranaguamirim', 'Jardim Paraiso': 'Jardim Paraíso', 'Aventreiro': 'Aventureiro'})
+    df['Bairro_Clean'] = df['Bairro_Clean'].replace({'Paraaguamirim': 'Paranaguamirim', 'Jardim Paraiso': 'Jardim Paraíso', 'Aventreiro': 'Aventureiro', 'Nan': 'Não Informado'})
+    
     df['Programa_Clean'] = df[col_prog].astype(str).str.strip()
     df['Acao_Clean'] = df[col_acao].astype(str).str.strip()
     df['Publico_Clean'] = df[col_pub].astype(str).str.strip()
+    
+    df['Total_Num'] = df['Total_Num'].fillna(0).astype(float)
 
     return df
 
@@ -244,7 +284,7 @@ if 'page_index' not in st.session_state:
 selected_page = st.sidebar.radio("Selecione a Visão", pages, index=st.session_state.page_index)
 st.session_state.page_index = pages.index(selected_page)
 
-# Carregamento do GeoJSON
+# Carregamento do GeoJSON apenas para a Página 2
 geojson_data = None
 if os.path.exists("bairros.geojson"):
     try:
@@ -308,7 +348,6 @@ lbl_m = "Soma de Pessoas" if usar_soma else "Nº de Eventos"
 if selected_page.startswith("1"):
     st.subheader(f"📊 Diagrama de Sankey — Fluxo de Atendimento ({lbl_m})")
     if not df_filtered.empty:
-        # Agrupamento correto para Programa -> Ação -> Público
         if usar_soma:
             df_p_a = df_filtered.groupby(['Programa_Clean', 'Acao_Clean'])['Total_Num'].sum().reset_index()
             df_a_pub = df_filtered.groupby(['Acao_Clean', 'Publico_Clean'])['Total_Num'].sum().reset_index()
@@ -318,12 +357,11 @@ if selected_page.startswith("1"):
             df_p_a = df_filtered.groupby(['Programa_Clean', 'Acao_Clean']).size().reset_index(name='Val')
             df_a_pub = df_filtered.groupby(['Acao_Clean', 'Publico_Clean']).size().reset_index(name='Val')
 
-        # Garantir apenas valores > 0 para o Sankey funcionar corretamente
+        # Filtra apenas fluxos maiores que zero para evitar o diagrama em branco
         df_p_a = df_p_a[df_p_a['Val'] > 0]
         df_a_pub = df_a_pub[df_a_pub['Val'] > 0]
 
         if not df_p_a.empty and not df_a_pub.empty:
-            # Rótulos únicos para os nós
             all_nodes = list(pd.unique(pd.concat([
                 df_p_a['Programa_Clean'], 
                 df_p_a['Acao_Clean'], 
@@ -428,7 +466,7 @@ elif selected_page.startswith("2"):
             st.plotly_chart(fig_map, use_container_width=True)
 
 # ------------------------------------------------------------------------------
-# 8. PÁGINA 3: EVOLUÇÃO E RANKING
+# 8. PÁGINA 3: EVOLUÇÃO E RANKING (SEM MAPA - APENAS GRÁFICOS)
 # ------------------------------------------------------------------------------
 elif selected_page.startswith("3"):
     c1, c2 = st.columns(2)

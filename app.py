@@ -68,19 +68,18 @@ st.markdown("""
 DARK_FONT = dict(family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color="#0F172A")
 
 def normalize_text(text):
-    """Remove acentos e caracteres especiais para busca flexível de colunas."""
     if not isinstance(text, str):
         return ""
     return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8').lower().strip()
 
 # ------------------------------------------------------------------------------
-# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
+# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS (LEITURA ESTÁVEL VIA EXCEL)
 # ------------------------------------------------------------------------------
 SHEET_ID = "13pLTKJgZRnA6cA4ZaxSZDm7wtvPBbI41Rx-pijOhNK0"
 
 @st.cache_data(ttl=600)
 def load_data():
-    sheet_names = [
+    target_sheets = [
         "Base de Dados_2026",
         "Base de Dados_2025",
         "Base de Dados_2024",
@@ -89,56 +88,95 @@ def load_data():
     ]
     dfs = []
     
-    for s in sheet_names:
-        try:
-            url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={s}"
-            t_df = pd.read_csv(url, header=0)
-            
-            # Garante a leitura de todas as linhas não nulas da aba
-            if not t_df.empty:
-                # Descarta linhas completamente vazias que possam ter vindo do Google Sheets
-                t_df = t_df.dropna(how='all').copy()
-                t_df['Origem_Aba'] = s
-                
-                # Procura exata e flexível pelo cabeçalho "Total – Dia"
-                col_found = None
-                for col in t_df.columns:
-                    col_str = str(col).strip()
-                    # Verifica correspondência exata ou variantes com hífens/travessões
-                    if col_str in ["Total – Dia", "Total - Dia", "Total–Dia", "Total-Dia"]:
-                        col_found = col
-                        break
-                    elif "total" in normalize_text(col_str) and "dia" in normalize_text(col_str):
-                        col_found = col
-                        break
+    # 1. Tentativa de Leitura Completa via XLSX Direct Link (Mais rápido e estável)
+    excel_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=xlsx"
+    
+    try:
+        excel_file = pd.ExcelFile(excel_url)
+        available_sheets = excel_file.sheet_names
+        
+        for s in target_sheets:
+            # Procura aba com correspondência sem erros de case
+            match_sheet = [sheet for sheet in available_sheets if normalize_text(sheet) == normalize_text(s)]
+            if match_sheet:
+                t_df = excel_file.parse(match_sheet[0])
+                if not t_df.empty:
+                    t_df = t_df.dropna(how='all').copy()
+                    t_df['Origem_Aba'] = s
+                    
+                    # Procura pela coluna "Total – Dia"
+                    col_found = None
+                    for col in t_df.columns:
+                        col_str = str(col).strip()
+                        if col_str in ["Total – Dia", "Total - Dia", "Total–Dia", "Total-Dia"]:
+                            col_found = col
+                            break
+                        elif "total" in normalize_text(col_str) and "dia" in normalize_text(col_str):
+                            col_found = col
+                            break
 
-                if col_found is not None:
-                    col_target = t_df[col_found]
-                elif t_df.shape[1] >= 13:
-                    # Fallback para Coluna M (índice 12)
-                    col_target = t_df.iloc[:, 12]
-                else:
-                    col_target = pd.Series([0] * len(t_df))
+                    if col_found is not None:
+                        col_target = t_df[col_found]
+                    elif t_df.shape[1] >= 13:
+                        col_target = t_df.iloc[:, 12]
+                    else:
+                        col_target = pd.Series([0] * len(t_df))
+
+                    cleaned_num = (
+                        col_target.astype(str)
+                        .str.replace('.', '', regex=False)
+                        .str.replace(',', '.', regex=False)
+                        .str.replace(r'[^\d.]', '', regex=True)
+                    )
+                    t_df['Total_Num'] = pd.to_numeric(cleaned_num, errors='coerce').fillna(0)
+                    dfs.append(t_df)
+    except Exception:
+        # Fallback para o modo CSV individual se a exportação xlsx for bloqueada
+        for s in target_sheets:
+            try:
+                csv_url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={s}"
+                t_df = pd.read_csv(csv_url, header=0)
+                if not t_df.empty:
+                    t_df = t_df.dropna(how='all').copy()
+                    t_df['Origem_Aba'] = s
                     
-                # Tratamento rigoroso da coluna numérica (preserva inteiros e decimais)
-                cleaned_num = (
-                    col_target.astype(str)
-                    .str.replace('.', '', regex=False)
-                    .str.replace(',', '.', regex=False)
-                    .str.replace(r'[^\d.]', '', regex=True)
-                )
-                t_df['Total_Num'] = pd.to_numeric(cleaned_num, errors='coerce').fillna(0)
-                    
-                dfs.append(t_df)
-        except Exception as e:
-            st.warning(f"Atenção ao carregar a aba {s}: {e}")
-            
+                    col_found = None
+                    for col in t_df.columns:
+                        col_str = str(col).strip()
+                        if col_str in ["Total – Dia", "Total - Dia", "Total–Dia", "Total-Dia"]:
+                            col_found = col
+                            break
+                        elif "total" in normalize_text(col_str) and "dia" in normalize_text(col_str):
+                            col_found = col
+                            break
+
+                    if col_found is not None:
+                        col_target = t_df[col_found]
+                    elif t_df.shape[1] >= 13:
+                        col_target = t_df.iloc[:, 12]
+                    else:
+                        col_target = pd.Series([0] * len(t_df))
+
+                    cleaned_num = (
+                        col_target.astype(str)
+                        .str.replace('.', '', regex=False)
+                        .str.replace(',', '.', regex=False)
+                        .str.replace(r'[^\d.]', '', regex=True)
+                    )
+                    t_df['Total_Num'] = pd.to_numeric(cleaned_num, errors='coerce').fillna(0)
+                    dfs.append(t_df)
+            except Exception:
+                pass
+
     if dfs:
         df = pd.concat(dfs, ignore_index=True)
     else:
-        df = pd.DataFrame()
-
-    if df.empty:
+        # Cria estrutura de segurança caso haja falha completa de rede com Google
+        df = pd.DataFrame(columns=[
+            'Data', 'Programa', 'Ação', 'Bairro', 'Público', 'Total_Num', 
+            'Origem_Aba', 'Data_Parsed', 'Ano_Val', 'Bairro_Clean', 
+            'Programa_Clean', 'Acao_Clean', 'Publico_Clean'
+        ])
         return df
 
     # Identificação flexível das colunas principais
@@ -160,7 +198,6 @@ def load_data():
     # Parsing seguro de Datas
     df['Data_Parsed'] = pd.to_datetime(df[col_data].astype(str), errors='coerce', dayfirst=True)
     
-    # Preenche o ano a partir da dataparsed ou tenta extrair do nome da aba (ex: "Base de Dados_2024")
     df['Ano_Val'] = df['Data_Parsed'].dt.year
     df['Ano_Val'] = df['Ano_Val'].fillna(
         df['Origem_Aba'].str.extract(r'(\d{4})')[0].astype(float)
@@ -186,13 +223,21 @@ def load_data():
 
 df = load_data()
 
+# Garantia de presença das colunas calculadas
+for required_col in ['Bairro_Clean', 'Programa_Clean', 'Acao_Clean', 'Publico_Clean', 'Total_Num']:
+    if required_col not in df.columns:
+        df[required_col] = 'Não Informado' if 'Clean' in required_col else 0.0
+
+if 'Data_Parsed' not in df.columns:
+    df['Data_Parsed'] = pd.Series(dtype='datetime64[ns]')
+
 # ------------------------------------------------------------------------------
 # 3. SIDEBAR: FILTROS E CONTROLES
 # ------------------------------------------------------------------------------
 if os.path.exists("logo.png"):
-    st.sidebar.image("logo.png", use_container_width=True)
+    st.sidebar.image("logo.png", width='stretch')
 elif os.path.exists("logo.jpg"):
-    st.sidebar.image("logo.jpg", use_container_width=True)
+    st.sidebar.image("logo.jpg", width='stretch')
 
 st.sidebar.subheader("🔍 Filtros de Análise")
 
@@ -203,17 +248,23 @@ metrica = st.sidebar.radio(
 )
 usar_soma = (metrica == "👥 Pessoas Impactadas")
 
-# Cálculo do intervalo do filtro de data
 valid_dates = df['Data_Parsed'].dropna() if not df.empty else pd.Series()
 min_date = valid_dates.min().date() if not valid_dates.empty else pd.to_datetime('2022-01-01').date()
 max_date = valid_dates.max().date() if not valid_dates.empty else pd.to_datetime('2026-12-31').date()
 
-start_date, end_date = st.sidebar.date_input(
+date_selection = st.sidebar.date_input(
     "Período de Execução",
     value=[min_date, max_date],
     min_value=min_date,
     max_value=max_date
 )
+
+if isinstance(date_selection, (list, tuple)) and len(date_selection) == 2:
+    start_date, end_date = date_selection
+elif isinstance(date_selection, (list, tuple)) and len(date_selection) == 1:
+    start_date = end_date = date_selection[0]
+else:
+    start_date, end_date = min_date, max_date
 
 bairros_unicos = ["Todos os Bairros"] + sorted([b for b in df['Bairro_Clean'].unique() if b and b not in ['Nan', 'Não Informado']])
 sel_bairro = st.sidebar.selectbox("Bairro", bairros_unicos)
@@ -256,12 +307,11 @@ if os.path.exists("bairros.geojson"):
         pass
 
 # ------------------------------------------------------------------------------
-# 4. FILTRAGEM DOS DADOS (SEM PERDER LINHAS COM DATAS AUSENTES QUANDO FILTRO FOR AMPLO)
+# 4. FILTRAGEM DOS DADOS
 # ------------------------------------------------------------------------------
-# Se o filtro abrange todo o período disponível, mantemos também as linhas com data nula
 is_full_range = (start_date <= min_date) and (end_date >= max_date)
 
-if is_full_range:
+if is_full_range or df.empty:
     mask = pd.Series(True, index=df.index)
 else:
     mask = df['Data_Parsed'].isna() | ((df['Data_Parsed'].dt.date >= start_date) & (df['Data_Parsed'].dt.date <= end_date))
@@ -283,7 +333,7 @@ st.markdown('<p class="sub-title">Prefeitura Municipal de Joinville | Série His
 
 col1, col2, col3, col4 = st.columns(4)
 
-total_pessoas = int(df_filtered['Total_Num'].sum())
+total_pessoas = int(df_filtered['Total_Num'].sum()) if not df_filtered.empty else 0
 total_eventos = len(df_filtered)
 
 if usar_soma:
@@ -355,7 +405,7 @@ if selected_page.startswith("1"):
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_sankey, use_container_width=True)
+            st.plotly_chart(fig_sankey, width='stretch')
         else:
             st.warning("Valores zerados para os filtros selecionados.")
     else:
@@ -406,7 +456,7 @@ elif selected_page.startswith("2"):
                 margin=dict(l=0, r=0, t=10, b=0),
                 paper_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_map, use_container_width=True)
+            st.plotly_chart(fig_map, width='stretch')
         else:
             coords = {
                 "Centro": [-26.3045, -48.8461], "América": [-26.2890, -48.8475], "Anita Garibaldi": [-26.3190, -48.8520],
@@ -430,7 +480,7 @@ elif selected_page.startswith("2"):
                 labels={val_col: lbl_m}
             )
             fig_map.update_layout(height=580, font=DARK_FONT, margin=dict(l=0, r=0, t=10, b=0))
-            st.plotly_chart(fig_map, use_container_width=True)
+            st.plotly_chart(fig_map, width='stretch')
 
 # ------------------------------------------------------------------------------
 # 8. PÁGINA 3: EVOLUÇÃO E RANKING
@@ -464,7 +514,7 @@ elif selected_page.startswith("3"):
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_temp, use_container_width=True)
+            st.plotly_chart(fig_temp, width='stretch')
 
     with c2:
         st.subheader(f"🏆 Top 15 Bairros Atendidos ({lbl_m})")
@@ -480,7 +530,7 @@ elif selected_page.startswith("3"):
                 df_b.tail(15), x=y_val, y='Bairro_Clean', orientation='h',
                 text_auto=True,
                 labels={'Bairro_Clean': 'Bairro', y_val: lbl_m},
-                color=y_val, color_continuous_scale='Slate'
+                color=y_val, color_continuous_scale='Blues'
             )
             fig_b.update_layout(
                 xaxis=dict(title=dict(text=lbl_m, font=DARK_FONT), tickfont=DARK_FONT),
@@ -492,7 +542,7 @@ elif selected_page.startswith("3"):
                 paper_bgcolor='rgba(0,0,0,0)',
                 plot_bgcolor='rgba(0,0,0,0)'
             )
-            st.plotly_chart(fig_b, use_container_width=True)
+            st.plotly_chart(fig_b, width='stretch')
 
 # Lógica de Rotação Automática
 if auto_rotate:

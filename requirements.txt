@@ -1,7 +1,7 @@
-streamlit
-pandas
-plotly
-geopandas
-streamlit-autorefresh
-gspread
-gspread-pandas
+streamlit>=1.38
+pandas>=2.2
+plotly>=5.24
+gspread>=6.1
+google-auth>=2.30
+streamlit-autorefresh>=1.0.1
+odfpy>=1.4.1

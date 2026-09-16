@@ -29,18 +29,22 @@ def aplicar_estilo():
                 transition-delay: 0s !important;
             }}
 
-            /* Reduz cabeçalho/rodapé padrão do Streamlit e o respiro em
-               volta do conteúdo, para caber tudo sem rolagem. */
+            /* Cabeçalho do Streamlit: mantido, só bem mais baixo e sem os
+               ícones de menu/"Deploy" — mas preserva o botão de
+               abrir/fechar a barra lateral, que fica dentro dele. */
             header[data-testid="stHeader"] {{
-                height: 0rem;
-                min-height: 0rem;
+                height: 2.5rem;
+                min-height: 2.5rem;
+                background: {config.COR_FUNDO};
             }}
-            div[data-testid="stToolbar"], #MainMenu, footer {{
+            div[data-testid="stToolbarActions"] {{
                 display: none;
+            }}
+            #MainMenu, footer {{
                 visibility: hidden;
             }}
             .block-container {{
-                padding-top: 0.8rem;
+                padding-top: 2.7rem;
                 padding-bottom: 0.5rem;
             }}
             section[data-testid="stSidebar"] .block-container {{

@@ -1,6 +1,7 @@
 streamlit
 pandas
-numpy
 plotly
-openpyxl
+geopandas
+streamlit-autorefresh
 gspread
+gspread-pandas

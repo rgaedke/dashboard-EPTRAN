@@ -8,7 +8,7 @@ import os
 import time
 
 # ------------------------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS CLEAN / ALTO CONTRASTE
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS CLEAN / CONTRASTE GARANTIDO NOS FILTROS
 # ------------------------------------------------------------------------------
 st.set_page_config(
     page_title="Dashboard EPTRAN",
@@ -17,10 +17,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilo Visual: Fundo Claro (#F8FAFC / #FFFFFF) com Detalhes e Textos Escuros (#0F172A)
+# Estilo Visual: Fundo Claro com Filtros Brancos e Letras Escuras
 st.markdown("""
 <style>
-    /* Estilo Geral */
+    /* Estilo Geral da Aplicação */
     .stApp {
         background-color: #F8FAFC;
         color: #0F172A;
@@ -52,6 +52,31 @@ st.markdown("""
         border-right: 1px solid #E2E8F0;
     }
     
+    /* CORREÇÃO VISUAL DOS FILTROS (Fundo claro + Texto escuro) */
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
+    section[data-testid="stSidebar"] input {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        border-color: #CBD5E1 !important;
+    }
+    
+    /* Dropdown do Selectbox */
+    div[data-baseweb="popover"] div,
+    div[data-baseweb="menu"] {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    
+    /* Itens dentro do menu do Selectbox */
+    div[data-baseweb="option"] {
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
+    div[data-baseweb="option"]:hover {
+        background-color: #F1F5F9 !important;
+    }
+
     /* Cartões de KPI */
     div[data-testid="stMetric"] {
         background-color: #FFFFFF;
@@ -72,13 +97,6 @@ st.markdown("""
         font-size: 22px !important;
         font-weight: 800 !important;
         color: #0F172A !important;
-    }
-    
-    /* Elementos de Formot */
-    .stRadio label, .stSelectbox label, .stDateInput label {
-        font-size: 12px !important;
-        font-weight: 700 !important;
-        color: #334155 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -153,7 +171,7 @@ def load_data():
     col_bairro = 'Bairro' if 'Bairro' in df.columns else df.columns[2]
     col_pub = 'Público' if 'Público' in df.columns else df.columns[3]
 
-    df['Total_Num'] = pd.to_numeric(df[col_total].astype(str).str.replace(r'[^\d]', '', regex=True), errors='coerce').fillna(0).astype(int)
+    df['Total_Num'] = pd.to_numeric(df[col_total].astype(str).str.replace(r'[^\d]', '', regex=True), errors='coerce').fillna(0).astype(float)
     df['Data_Parsed'] = pd.to_datetime(df['Data'].astype(str), errors='coerce', dayfirst=True)
     df['Data_Parsed'] = df['Data_Parsed'].fillna(pd.to_datetime('2022-01-01'))
     df['Ano_Val'] = df['Data_Parsed'].dt.year.astype(int)
@@ -257,7 +275,7 @@ st.markdown('<p class="sub-title">Prefeitura Municipal de Joinville | Série His
 
 col1, col2, col3, col4 = st.columns(4)
 
-total_pessoas = df_filtered['Total_Num'].sum()
+total_pessoas = int(df_filtered['Total_Num'].sum())
 total_eventos = len(df_filtered)
 
 if usar_soma:
@@ -285,42 +303,56 @@ col4.metric("Programa Destaque", top_p)
 lbl_m = "Soma de Pessoas" if usar_soma else "Nº de Eventos"
 
 # ------------------------------------------------------------------------------
-# 6. PÁGINA 1: SANKEY DIAGRAM
+# 6. PÁGINA 1: SANKEY DIAGRAM (CORRIGIDO)
 # ------------------------------------------------------------------------------
 if selected_page.startswith("1"):
     st.subheader(f"📊 Diagrama de Sankey — Fluxo de Atendimento ({lbl_m})")
     if not df_filtered.empty:
-        links_map = {}
-        for _, r in df_filtered.iterrows():
-            val = r['Total_Num'] if usar_soma else 1
-            k1 = f"{r['Programa_Clean']}|||{r['Acao_Clean']}"
-            k2 = f"{r['Acao_Clean']}|||{r['Publico_Clean']}"
-            links_map[k1] = links_map.get(k1, 0) + val
-            links_map[k2] = links_map.get(k2, 0) + val
+        # Agrupamento correto para Programa -> Ação -> Público
+        if usar_soma:
+            df_p_a = df_filtered.groupby(['Programa_Clean', 'Acao_Clean'])['Total_Num'].sum().reset_index()
+            df_a_pub = df_filtered.groupby(['Acao_Clean', 'Publico_Clean'])['Total_Num'].sum().reset_index()
+            df_p_a.rename(columns={'Total_Num': 'Val'}, inplace=True)
+            df_a_pub.rename(columns={'Total_Num': 'Val'}, inplace=True)
+        else:
+            df_p_a = df_filtered.groupby(['Programa_Clean', 'Acao_Clean']).size().reset_index(name='Val')
+            df_a_pub = df_filtered.groupby(['Acao_Clean', 'Publico_Clean']).size().reset_index(name='Val')
 
-        nodes = list(set([k.split("|||")[0] for k in links_map.keys()] + [k.split("|||")[1] for k in links_map.keys()]))
-        node_dict = {n: i for i, n in enumerate(nodes)}
+        # Garantir apenas valores > 0 para o Sankey funcionar corretamente
+        df_p_a = df_p_a[df_p_a['Val'] > 0]
+        df_a_pub = df_a_pub[df_a_pub['Val'] > 0]
 
-        sources = [node_dict[k.split("|||")[0]] for k in links_map.keys()]
-        targets = [node_dict[k.split("|||")[1]] for k in links_map.keys()]
-        values = list(links_map.values())
+        if not df_p_a.empty and not df_a_pub.empty:
+            # Rótulos únicos para os nós
+            all_nodes = list(pd.unique(pd.concat([
+                df_p_a['Programa_Clean'], 
+                df_p_a['Acao_Clean'], 
+                df_a_pub['Publico_Clean']
+            ])))
+            node_map = {node: idx for idx, node in enumerate(all_nodes)}
 
-        fig_sankey = go.Figure(data=[go.Sankey(
-            node=dict(
-                pad=18, thickness=18,
-                line=dict(color="#0F172A", width=0.5),
-                label=nodes, color="#1E293B"
-            ),
-            link=dict(source=sources, target=targets, value=values, color="rgba(15, 23, 42, 0.12)")
-        )])
-        fig_sankey.update_layout(
-            height=580,
-            font=DARK_FONT,
-            margin=dict(l=10, r=10, t=20, b=10),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        )
-        st.plotly_chart(fig_sankey, use_container_width=True)
+            sources = [node_map[src] for src in df_p_a['Programa_Clean']] + [node_map[src] for src in df_a_pub['Acao_Clean']]
+            targets = [node_map[tgt] for tgt in df_p_a['Acao_Clean']] + [node_map[tgt] for tgt in df_a_pub['Publico_Clean']]
+            values = list(df_p_a['Val']) + list(df_a_pub['Val'])
+
+            fig_sankey = go.Figure(data=[go.Sankey(
+                node=dict(
+                    pad=18, thickness=18,
+                    line=dict(color="#0F172A", width=0.5),
+                    label=all_nodes, color="#1E293B"
+                ),
+                link=dict(source=sources, target=targets, value=values, color="rgba(15, 23, 42, 0.15)")
+            )])
+            fig_sankey.update_layout(
+                height=580,
+                font=DARK_FONT,
+                margin=dict(l=10, r=10, t=20, b=10),
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)'
+            )
+            st.plotly_chart(fig_sankey, use_container_width=True)
+        else:
+            st.warning("Valores zerados para os filtros selecionados.")
     else:
         st.warning("Nenhum dado encontrado para os filtros selecionados.")
 

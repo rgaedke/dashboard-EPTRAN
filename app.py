@@ -52,10 +52,10 @@ st.markdown("""
     }
     
     /* ==========================================================================
-       CORREÇÃO DEFINITIVA DE FILTROS (INPUTS, DROPDOWNS E CALENDÁRIO)
+       CORREÇÃO FORÇADA DE COR DE FUNDO (DROPDOWNS E CALENDÁRIO FORA DA SIDEBAR)
        ========================================================================== */
     
-    /* Caixas fechadas (Inputs e Selects) na Sidebar */
+    /* Caixas fechadas na Sidebar */
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
     section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
     section[data-testid="stSidebar"] input {
@@ -64,44 +64,43 @@ st.markdown("""
         border: 1px solid #CBD5E1 !important;
     }
     
-    /* Textos dentro das caixas fechadas */
     section[data-testid="stSidebar"] div[data-baseweb="select"] span,
     section[data-testid="stSidebar"] div[data-baseweb="select"] div {
         color: #0F172A !important;
     }
     
-    /* Menus Suspensos / Dropdowns Abertos (Renderizados na Raiz do DOM) */
+    /* Dropdowns / Menus Flutuantes Abertos (BaseWeb Popover) */
     div[data-baseweb="popover"],
-    div[data-baseweb="popover"] > div,
+    div[data-baseweb="popover"] *,
     div[data-baseweb="menu"],
-    div[data-baseweb="menu"] * {
+    div[data-baseweb="menu"] *,
+    ul[role="listbox"],
+    ul[role="listbox"] * {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
     }
 
-    /* Itens da lista do Dropdown */
-    ul[role="listbox"] li,
-    div[data-baseweb="option"] {
-        background-color: #FFFFFF !important;
-        color: #0F172A !important;
-    }
+    /* Hover e Item Selecionado do Dropdown */
+    li[role="option"]:hover,
     div[data-baseweb="option"]:hover,
-    div[data-baseweb="option"][aria-selected="true"] {
+    div[aria-selected="true"] {
         background-color: #F1F5F9 !important;
         color: #0F172A !important;
     }
 
     /* Popover do Calendário (DateInput) */
     div[data-baseweb="calendar"],
-    div[data-baseweb="calendar"] * {
+    div[data-baseweb="calendar"] *,
+    div[data-baseweb="calendar"] header,
+    div[data-baseweb="calendar"] header * {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
     }
     
-    /* Botões de navegação e dias do calendário */
+    /* Dias do calendário e botões */
     div[data-baseweb="calendar"] button {
         color: #0F172A !important;
-        background-color: transparent !important;
+        background-color: #FFFFFF !important;
     }
     div[data-baseweb="calendar"] button:hover {
         background-color: #F1F5F9 !important;
@@ -138,7 +137,7 @@ st.markdown("""
 DARK_FONT = dict(family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif", color="#0F172A")
 
 # ------------------------------------------------------------------------------
-# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS
+# 2. CARREGAMENTO E CONSOLIDAÇÃO DOS DADOS (LEITURA DA COLUNA M)
 # ------------------------------------------------------------------------------
 SHEET_ID = "13pLTKJgZRnA6cA4ZaxSZDm7wtvPBbI41Rx-pijOhNK0"
 
@@ -150,16 +149,15 @@ def load_data():
     for s in sheet_names:
         try:
             url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={s}"
-            t_df = pd.read_csv(url)
-            if not t_df.empty and len(t_df.columns) > 2:
+            t_df = pd.read_csv(url, header=0)
+            if not t_df.empty:
                 t_df['Origem_Aba'] = s
                 
-                possible_total_cols = [c for c in t_df.columns if any(k in str(c).lower() for k in ['total', 'atendidos', 'público', 'publico', 'impactad', 'qtd', 'quantidade'])]
-                
-                if possible_total_cols:
-                    tot_col = possible_total_cols[0]
+                # Leitura direta da Coluna M (índice 12 na contagem zero-based)
+                if t_df.shape[1] >= 13:
+                    col_m = t_df.iloc[:, 12]
                     t_df['Total_Num'] = pd.to_numeric(
-                        t_df[tot_col].astype(str).str.replace(r'[^\d]', '', regex=True),
+                        col_m.astype(str).str.replace(r'[^\d]', '', regex=True),
                         errors='coerce'
                     ).fillna(0)
                 else:
@@ -327,7 +325,7 @@ total_eventos = len(df_filtered)
 
 if usar_soma:
     val_kpi1 = f"{total_pessoas:,}".replace(',', '.')
-    label_kpi1 = "Pessoas Impactadas"
+    label_kpi1 = "Pessoas Impactadas (Col M)"
 else:
     val_kpi1 = f"{total_eventos:,}".replace(',', '.')
     label_kpi1 = "Nº de Eventos"
@@ -347,7 +345,7 @@ else:
 col3.metric("Bairro Destaque", top_b)
 col4.metric("Programa Destaque", top_p)
 
-lbl_m = "Soma de Pessoas" if usar_soma else "Nº de Eventos"
+lbl_m = "Soma de Pessoas (Col M)" if usar_soma else "Nº de Eventos"
 
 # ------------------------------------------------------------------------------
 # 6. PÁGINA 1: SANKEY DIAGRAM

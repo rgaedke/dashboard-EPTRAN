@@ -127,7 +127,6 @@ def grafico_mapa_coropletico(df_explodido: pd.DataFrame, geojson: dict):
     fig.update_layout(
         paper_bgcolor=config.COR_FUNDO,
         margin=dict(l=0, r=0, t=0, b=0),
-        height=config.ALTURA_MAPA,
         coloraxis_colorbar=dict(title=""),
     )
     return fig

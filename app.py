@@ -54,7 +54,8 @@ opcoes_bairro = opcoes_bairro + extras_presentes
 
 
 # ---------------------------------------------------------------------------
-# Barra superior: modo kiosk (autoplay a cada 15s) + navegação manual
+# Modo kiosk (autoplay a cada 15s). Isso precisa rodar antes de qualquer
+# leitura de st.session_state.tela_atual mais abaixo.
 # ---------------------------------------------------------------------------
 if "autoplay" not in st.session_state:
     st.session_state.autoplay = False  # começa desligado; liga pelo botão ▶
@@ -65,13 +66,21 @@ if st.session_state.autoplay:
     contador = st_autorefresh(interval=config.INTERVALO_AUTOPLAY_MS, key="autorefresh_kiosk")
     st.session_state.tela_atual = contador % 3
 
-tela_atual = ui.barra_navegacao()
-
 
 # ---------------------------------------------------------------------------
-# Filtros globais (barra lateral)
+# Barra lateral: filtros + controles de apresentação (Tela / Play-Pause).
+# Chamados antes de ler tela_atual abaixo, para o valor já vir atualizado
+# nesta mesma execução caso o usuário tenha acabado de trocar de tela.
 # ---------------------------------------------------------------------------
 filtros = ui.filtros_globais(df, opcoes_bairro)
+ui.controle_apresentacao()
+tela_atual = st.session_state.tela_atual
+
+
+# ---------------------------------------------------------------------------
+# Área principal: título da tela (alinhado à esquerda)
+# ---------------------------------------------------------------------------
+ui.titulo_tela()
 
 data_ini, data_fim = filtros["periodo"]
 mascara = (
@@ -108,10 +117,12 @@ if tela_atual == 0:
         st.plotly_chart(fig, use_container_width=True)
 
 elif tela_atual == 1:
-    st.markdown("#### Análise Geográfica")
     fig = charts.grafico_mapa_coropletico(df_explodido_mapa, geojson)
     if fig:
-        st.plotly_chart(fig, use_container_width=True)
+        # height="stretch": o mapa ocupa todo o espaço vertical que sobrar
+        # na tela, em vez de uma altura fixa em pixels.
+        with st.container(height="stretch"):
+            st.plotly_chart(fig, width="stretch", height="stretch")
     else:
         st.info("Sem dados de bairro para exibir no mapa com os filtros atuais.")
     if n_nao_mapeado > 0:

@@ -117,9 +117,9 @@ CORES_SANKEY = [AZUL_ESCURO, AZUL_PETROLEO, AZUL_MEDIO, AZUL_CLARO]
 # ---------------------------------------------------------------------------
 INTERVALO_AUTOPLAY_MS = 15_000
 NOMES_TELAS = [
-    "Tela 1 · Visão Geral",
-    "Tela 2 · Mapa por Bairro",
-    "Tela 3 · Comparativos e Evolução",
+    "Visão Geral",
+    "Mapa por Bairro",
+    "Comparativos e Evolução",
 ]
 
 # Centro aproximado de Joinville/SC, usado no mapa
@@ -131,5 +131,7 @@ JOINVILLE_LON = -48.8487
 # espaço na tela do seu monitor/TV do modo kiosk.
 # ---------------------------------------------------------------------------
 ALTURA_SANKEY = 460
-ALTURA_MAPA = 560
 ALTURA_GRAFICO_SECUNDARIO = 400  # evolução temporal e Top 15 (Tela 3)
+# O mapa (Tela 2) não usa uma altura fixa: ele preenche automaticamente o
+# espaço vertical disponível na tela (ver st.container(height="stretch")
+# em app.py).

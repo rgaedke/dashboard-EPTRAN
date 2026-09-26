@@ -97,6 +97,102 @@ def grafico_sankey(df: pd.DataFrame):
     return _layout_padrao(fig, altura=config.ALTURA_SANKEY)
 
 
+def grafico_treemap(df: pd.DataFrame):
+    """Opção 1: Treemap Programa → Ação. Cada retângulo é proporcional ao
+    peso (Pessoas Impactadas ou Programas, conforme o switch), o que deixa
+    bem visível qual programa/ação concentra mais volume."""
+    if df.empty:
+        return None
+    dados = df.groupby(["programa", "acao"], as_index=False)["peso"].sum()
+    dados = dados[dados["peso"] > 0]
+    if dados.empty:
+        return None
+    fig = px.treemap(
+        dados,
+        path=[px.Constant("Total"), "programa", "acao"],
+        values="peso",
+        color="peso",
+        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
+    )
+    fig.update_traces(marker=dict(line=dict(color=config.COR_FUNDO, width=1)))
+    fig.update_coloraxes(showscale=False)
+    return _layout_padrao(fig, "Treemap: Programa → Ação", altura=config.ALTURA_GRAFICO_GRADE)
+
+
+def grafico_sunburst(df: pd.DataFrame):
+    """Opção 2: Sunburst Programa → Ação, a mesma hierarquia do treemap
+    só que em formato circular — mais fácil de comparar proporções entre
+    "fatias" do mesmo programa."""
+    if df.empty:
+        return None
+    dados = df.groupby(["programa", "acao"], as_index=False)["peso"].sum()
+    dados = dados[dados["peso"] > 0]
+    if dados.empty:
+        return None
+    fig = px.sunburst(
+        dados,
+        path=["programa", "acao"],
+        values="peso",
+        color="peso",
+        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
+    )
+    fig.update_traces(marker=dict(line=dict(color=config.COR_FUNDO, width=1)))
+    fig.update_coloraxes(showscale=False)
+    return _layout_padrao(fig, "Sunburst: Programa → Ação", altura=config.ALTURA_GRAFICO_GRADE)
+
+
+def grafico_heatmap_programa_acao(df: pd.DataFrame, top_n_acoes: int = 15):
+    """Opção 3: Mapa de calor Programa × Ação. Bom para achar rapidamente
+    quais combinações concentram (ou não têm quase nenhum) atendimento.
+    Mostra só as top_n_acoes ações (por volume) para não poluir."""
+    if df.empty:
+        return None
+    top_acoes = (
+        df.groupby("acao")["peso"].sum().sort_values(ascending=False).head(top_n_acoes).index
+    )
+    dados = df[df["acao"].isin(top_acoes)]
+    tabela = dados.pivot_table(
+        index="programa", columns="acao", values="peso", aggfunc="sum", fill_value=0
+    )
+    if tabela.empty:
+        return None
+    fig = px.imshow(
+        tabela,
+        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
+        aspect="auto",
+        labels=dict(color=""),
+    )
+    fig.update_coloraxes(showscale=False)
+    fig.update_xaxes(title="", tickangle=-35)
+    fig.update_yaxes(title="")
+    return _layout_padrao(
+        fig, f"Mapa de calor: Programa × Ação (top {top_n_acoes})", altura=config.ALTURA_GRAFICO_GRADE
+    )
+
+
+def grafico_ranking_programas(df: pd.DataFrame):
+    """Opção 4: ranking simples dos programas por volume — a leitura mais
+    direta e rápida de "quem é quem" no período filtrado."""
+    if df.empty:
+        return None
+    dados = (
+        df.groupby("programa", as_index=False)["peso"]
+        .sum()
+        .query("peso > 0")
+        .sort_values("peso", ascending=True)
+    )
+    if dados.empty:
+        return None
+    fig = px.bar(
+        dados, x="peso", y="programa", orientation="h",
+        color="peso", color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
+    )
+    fig.update_coloraxes(showscale=False)
+    fig.update_xaxes(title="")
+    fig.update_yaxes(title="")
+    return _layout_padrao(fig, "Ranking de Programas", altura=config.ALTURA_GRAFICO_GRADE)
+
+
 def grafico_mapa_coropletico(df_explodido: pd.DataFrame, geojson: dict):
     """Mapa coroplético por bairro. Recebe o dataframe já 'explodido'
     (uma linha por bairro citado) e já sem os registros Não mapeado /

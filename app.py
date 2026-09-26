@@ -111,10 +111,25 @@ if df_filtrado.empty:
 
 if tela_atual == 0:
     ui.cards_kpi(df_filtrado, df_explodido_mapa, filtros["metrica"])
-    st.markdown("#### Fluxo: Programa → Ação → Público")
-    fig = charts.grafico_sankey(df_filtrado)
-    if fig:
-        st.plotly_chart(fig, use_container_width=True)
+    st.caption("4 opções de gráfico para avaliar — veja o chat para mais sugestões.")
+    linha1_col1, linha1_col2 = st.columns(2)
+    with linha1_col1:
+        fig = charts.grafico_treemap(df_filtrado)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
+    with linha1_col2:
+        fig = charts.grafico_sunburst(df_filtrado)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
+    linha2_col1, linha2_col2 = st.columns(2)
+    with linha2_col1:
+        fig = charts.grafico_heatmap_programa_acao(df_filtrado)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
+    with linha2_col2:
+        fig = charts.grafico_ranking_programas(df_filtrado)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
 
 elif tela_atual == 1:
     fig = charts.grafico_mapa_coropletico(df_explodido_mapa, geojson)

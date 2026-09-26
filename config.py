@@ -132,6 +132,7 @@ JOINVILLE_LON = -48.8487
 # ---------------------------------------------------------------------------
 ALTURA_SANKEY = 460
 ALTURA_GRAFICO_SECUNDARIO = 400  # evolução temporal e Top 15 (Tela 3)
+ALTURA_GRAFICO_GRADE = 320  # cada um dos 4 gráficos de opção (Tela 1)
 # O mapa (Tela 2) não usa uma altura fixa: ele preenche automaticamente o
 # espaço vertical disponível na tela (ver st.container(height="stretch")
 # em app.py).

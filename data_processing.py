@@ -50,9 +50,9 @@ def limpar_dados(raw_df: pd.DataFrame) -> pd.DataFrame:
     if raw_df is None or raw_df.empty:
         return pd.DataFrame(
             columns=[
-                "data", "ano", "mes_num", "programa", "acao", "bairro_bruto",
-                "bairro_oficial", "bairro_status", "publico", "total_dia",
-                "bairros_filtro",
+                "data", "ano", "mes_num", "programa", "acao", "local",
+                "bairro_bruto", "bairro_oficial", "bairro_status", "publico",
+                "total_dia", "bairros_filtro",
             ]
         )
 
@@ -62,7 +62,7 @@ def limpar_dados(raw_df: pd.DataFrame) -> pd.DataFrame:
     # NaN direto para string pode preservar um valor nulo em vez do texto
     # "nan", então tratamos células vazias primeiro para não escapar das
     # checagens de texto vazio feitas logo abaixo.
-    for c in [config.COL_PROGRAMA, config.COL_ACAO, config.COL_BAIRRO, config.COL_PUBLICO, config.COL_TOTAL]:
+    for c in [config.COL_PROGRAMA, config.COL_ACAO, config.COL_LOCAL, config.COL_BAIRRO, config.COL_PUBLICO, config.COL_TOTAL]:
         df[c] = df[c].fillna("")
 
     programa = df[config.COL_PROGRAMA].astype(str).str.strip()
@@ -73,6 +73,13 @@ def limpar_dados(raw_df: pd.DataFrame) -> pd.DataFrame:
     df["acao"] = df[config.COL_ACAO].astype(str).str.strip()
     df["publico"] = df[config.COL_PUBLICO].astype(str).str.strip()
     df.loc[df["publico"].str.lower().isin(["nan", ""]), "publico"] = "Não informado"
+
+    # Local/Escola: só uma limpeza básica (espaços) — ao contrário do
+    # Bairro, aqui não existe uma lista oficial pra comparar, então nomes
+    # quase iguais (ex. "E.M Laura Andrade" vs "Escola Municipal Laura
+    # Andrade") podem aparecer como locais diferentes no ranking.
+    df["local"] = df[config.COL_LOCAL].astype(str).str.strip().str.replace(r"\s+", " ", regex=True)
+    df.loc[df["local"].str.lower().isin(["nan", ""]), "local"] = "Não informado"
 
     df["bairro_bruto"] = df[config.COL_BAIRRO].astype(str).str.strip()
     df.loc[df["bairro_bruto"].str.lower() == "nan", "bairro_bruto"] = ""
@@ -100,7 +107,7 @@ def limpar_dados(raw_df: pd.DataFrame) -> pd.DataFrame:
     df["bairros_filtro"] = df["bairro_bruto"].apply(_bairros_para_filtro)
 
     colunas = [
-        "data", "ano", "mes_num", "programa", "acao", "bairro_bruto",
+        "data", "ano", "mes_num", "programa", "acao", "local", "bairro_bruto",
         "bairro_oficial", "bairro_status", "publico", "total_dia",
         "bairros_filtro",
     ]

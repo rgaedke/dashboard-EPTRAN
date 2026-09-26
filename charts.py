@@ -4,6 +4,7 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 import config
 
@@ -97,82 +98,9 @@ def grafico_sankey(df: pd.DataFrame):
     return _layout_padrao(fig, altura=config.ALTURA_SANKEY)
 
 
-def grafico_treemap(df: pd.DataFrame):
-    """Opção 1: Treemap Programa → Ação. Cada retângulo é proporcional ao
-    peso (Pessoas Impactadas ou Programas, conforme o switch), o que deixa
-    bem visível qual programa/ação concentra mais volume."""
-    if df.empty:
-        return None
-    dados = df.groupby(["programa", "acao"], as_index=False)["peso"].sum()
-    dados = dados[dados["peso"] > 0]
-    if dados.empty:
-        return None
-    fig = px.treemap(
-        dados,
-        path=[px.Constant("Total"), "programa", "acao"],
-        values="peso",
-        color="peso",
-        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
-    )
-    fig.update_traces(marker=dict(line=dict(color=config.COR_FUNDO, width=1)))
-    fig.update_coloraxes(showscale=False)
-    return _layout_padrao(fig, "Treemap: Programa → Ação", altura=config.ALTURA_GRAFICO_GRADE)
-
-
-def grafico_sunburst(df: pd.DataFrame):
-    """Opção 2: Sunburst Programa → Ação, a mesma hierarquia do treemap
-    só que em formato circular — mais fácil de comparar proporções entre
-    "fatias" do mesmo programa."""
-    if df.empty:
-        return None
-    dados = df.groupby(["programa", "acao"], as_index=False)["peso"].sum()
-    dados = dados[dados["peso"] > 0]
-    if dados.empty:
-        return None
-    fig = px.sunburst(
-        dados,
-        path=["programa", "acao"],
-        values="peso",
-        color="peso",
-        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
-    )
-    fig.update_traces(marker=dict(line=dict(color=config.COR_FUNDO, width=1)))
-    fig.update_coloraxes(showscale=False)
-    return _layout_padrao(fig, "Sunburst: Programa → Ação", altura=config.ALTURA_GRAFICO_GRADE)
-
-
-def grafico_heatmap_programa_acao(df: pd.DataFrame, top_n_acoes: int = 15):
-    """Opção 3: Mapa de calor Programa × Ação. Bom para achar rapidamente
-    quais combinações concentram (ou não têm quase nenhum) atendimento.
-    Mostra só as top_n_acoes ações (por volume) para não poluir."""
-    if df.empty:
-        return None
-    top_acoes = (
-        df.groupby("acao")["peso"].sum().sort_values(ascending=False).head(top_n_acoes).index
-    )
-    dados = df[df["acao"].isin(top_acoes)]
-    tabela = dados.pivot_table(
-        index="programa", columns="acao", values="peso", aggfunc="sum", fill_value=0
-    )
-    if tabela.empty:
-        return None
-    fig = px.imshow(
-        tabela,
-        color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
-        aspect="auto",
-        labels=dict(color=""),
-    )
-    fig.update_coloraxes(showscale=False)
-    fig.update_xaxes(title="", tickangle=-35)
-    fig.update_yaxes(title="")
-    return _layout_padrao(
-        fig, f"Mapa de calor: Programa × Ação (top {top_n_acoes})", altura=config.ALTURA_GRAFICO_GRADE
-    )
-
-
 def grafico_ranking_programas(df: pd.DataFrame):
-    """Opção 4: ranking simples dos programas por volume — a leitura mais
-    direta e rápida de "quem é quem" no período filtrado."""
+    """Ranking dos programas por volume — a leitura mais direta e rápida
+    de "quem é quem" no período filtrado."""
     if df.empty:
         return None
     dados = (
@@ -191,6 +119,101 @@ def grafico_ranking_programas(df: pd.DataFrame):
     fig.update_xaxes(title="")
     fig.update_yaxes(title="")
     return _layout_padrao(fig, "Ranking de Programas", altura=config.ALTURA_GRAFICO_GRADE)
+
+
+def grafico_ranking_local(df: pd.DataFrame, top_n: int = 15):
+    """Ranking dos locais/escolas por volume (top_n). Como não existe uma
+    lista oficial de locais para comparar (diferente do Bairro, que usa o
+    geojson), nomes quase iguais escritos de formas diferentes na
+    planilha (ex. "E.M Laura Andrade" vs "Escola Municipal Laura Andrade")
+    aparecem como locais separados aqui."""
+    if df.empty:
+        return None
+    dados = (
+        df[df["local"] != "Não informado"]
+        .groupby("local", as_index=False)["peso"]
+        .sum()
+        .query("peso > 0")
+        .sort_values("peso", ascending=False)
+        .head(top_n)
+        .sort_values("peso", ascending=True)
+    )
+    if dados.empty:
+        return None
+    fig = px.bar(
+        dados, x="peso", y="local", orientation="h",
+        color="peso", color_continuous_scale=config.ESCALA_AZUL_PETROLEO,
+    )
+    fig.update_coloraxes(showscale=False)
+    fig.update_xaxes(title="")
+    fig.update_yaxes(title="")
+    return _layout_padrao(fig, f"Top {top_n} Local/Escola", altura=config.ALTURA_GRAFICO_GRADE)
+
+
+def grafico_calendario_atividade(df: pd.DataFrame):
+    """Calendário de atividade estilo GitHub: um mini-heatmap semana x dia
+    da semana para cada ano presente nos dados filtrados — quanto mais
+    escuro, maior o volume ('peso') naquele dia."""
+    dados = df.dropna(subset=["data"]).copy()
+    if dados.empty:
+        return None
+
+    dados["ano_cal"] = dados["data"].dt.year
+    dados["semana"] = dados["data"].dt.isocalendar().week.astype(int)
+    dados["dia_semana"] = dados["data"].dt.weekday  # 0=Seg ... 6=Dom
+
+    diario = dados.groupby(["ano_cal", "semana", "dia_semana"], as_index=False)["peso"].sum()
+    anos = sorted(diario["ano_cal"].unique())
+    if not anos:
+        return None
+
+    dias_label = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+    valor_max = diario["peso"].max()
+
+    fig = make_subplots(
+        rows=len(anos), cols=1,
+        subplot_titles=[str(a) for a in anos],
+        vertical_spacing=0.12 / max(len(anos), 1),
+    )
+
+    for i, ano in enumerate(anos, start=1):
+        sub = diario[diario["ano_cal"] == ano]
+        semanas = list(range(int(sub["semana"].min()), int(sub["semana"].max()) + 1))
+        matriz = (
+            sub.pivot_table(index="dia_semana", columns="semana", values="peso", fill_value=0)
+            .reindex(index=range(7), columns=semanas, fill_value=0)
+        )
+        fig.add_trace(
+            go.Heatmap(
+                z=matriz.values,
+                x=list(matriz.columns),
+                y=dias_label,
+                zmin=0,
+                zmax=valor_max if valor_max > 0 else 1,
+                colorscale=config.ESCALA_AZUL_PETROLEO,
+                showscale=(i == 1),
+                xgap=2,
+                ygap=2,
+                hovertemplate="Semana %{x}<br>%{y}<br>Valor: %{z:.0f}<extra></extra>",
+            ),
+            row=i, col=1,
+        )
+        fig.update_xaxes(showticklabels=False, row=i, col=1)
+        fig.update_yaxes(autorange="reversed", row=i, col=1)
+
+    altura = min(120 * len(anos) + 60, 520)
+    fig.update_layout(
+        paper_bgcolor=config.COR_FUNDO,
+        plot_bgcolor=config.COR_FUNDO,
+        font=dict(color=config.COR_TEXTO, family="Segoe UI, Arial, sans-serif"),
+        margin=dict(l=10, r=10, t=30, b=10),
+        height=altura,
+        coloraxis_colorbar=dict(title=""),
+    )
+    for anot in fig.layout.annotations:
+        anot.font.color = config.AZUL_PETROLEO
+        anot.font.size = 13
+    return fig
 
 
 def grafico_mapa_coropletico(df_explodido: pd.DataFrame, geojson: dict):

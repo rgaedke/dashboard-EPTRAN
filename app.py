@@ -111,23 +111,16 @@ if df_filtrado.empty:
 
 if tela_atual == 0:
     ui.cards_kpi(df_filtrado, df_explodido_mapa, filtros["metrica"])
-    st.caption("4 opções de gráfico para avaliar — veja o chat para mais sugestões.")
-    linha1_col1, linha1_col2 = st.columns(2)
-    with linha1_col1:
-        fig = charts.grafico_treemap(df_filtrado)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
-    with linha1_col2:
-        fig = charts.grafico_sunburst(df_filtrado)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
-    linha2_col1, linha2_col2 = st.columns(2)
-    with linha2_col1:
-        fig = charts.grafico_heatmap_programa_acao(df_filtrado)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
-    with linha2_col2:
+    fig_cal = charts.grafico_calendario_atividade(df_filtrado)
+    if fig_cal:
+        st.plotly_chart(fig_cal, use_container_width=True)
+    col_a, col_b = st.columns(2)
+    with col_a:
         fig = charts.grafico_ranking_programas(df_filtrado)
+        if fig:
+            st.plotly_chart(fig, use_container_width=True)
+    with col_b:
+        fig = charts.grafico_ranking_local(df_filtrado)
         if fig:
             st.plotly_chart(fig, use_container_width=True)
 

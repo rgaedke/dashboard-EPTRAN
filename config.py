@@ -52,6 +52,7 @@ COL_DIA = 1        # B - Dia
 COL_MES = 2        # C - Mês
 COL_PROGRAMA = 3   # D - Programa
 COL_ACAO = 4       # E - Ação
+COL_LOCAL = 6      # G - Local/Escola
 COL_BAIRRO = 8     # I - Bairro
 COL_PUBLICO = 9    # J - Público
 COL_TOTAL = 12     # M - Total - Dia
@@ -132,7 +133,7 @@ JOINVILLE_LON = -48.8487
 # ---------------------------------------------------------------------------
 ALTURA_SANKEY = 460
 ALTURA_GRAFICO_SECUNDARIO = 400  # evolução temporal e Top 15 (Tela 3)
-ALTURA_GRAFICO_GRADE = 320  # cada um dos 4 gráficos de opção (Tela 1)
+ALTURA_GRAFICO_GRADE = 320  # Ranking de Programas e Ranking Local/Escola (Tela 1)
 # O mapa (Tela 2) não usa uma altura fixa: ele preenche automaticamente o
 # espaço vertical disponível na tela (ver st.container(height="stretch")
 # em app.py).

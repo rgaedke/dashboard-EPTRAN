@@ -292,3 +292,93 @@ def grafico_top15_bairros(df_explodido: pd.DataFrame):
     fig.update_xaxes(title="")
     fig.update_yaxes(title="")
     return _layout_padrao(fig, "Top 15 bairros", altura=config.ALTURA_GRAFICO_SECUNDARIO)
+
+
+# ---------------------------------------------------------------------------
+# Alternativas ao calendário de atividade (para comparação, no fim da Tela 3)
+# ---------------------------------------------------------------------------
+
+_MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+
+def _cores_gradiente(n: int, cor_ini: str, cor_fim: str) -> list:
+    """n cores igualmente espaçadas entre cor_ini e cor_fim (hex)."""
+    def _rgb(h):
+        h = h.lstrip("#")
+        return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
+
+    ini, fim = _rgb(cor_ini), _rgb(cor_fim)
+    if n <= 1:
+        return [cor_fim]
+    return [
+        "#" + "".join(f"{int(ini[k] + (fim[k] - ini[k]) * i / (n - 1)):02X}" for k in range(3))
+        for i in range(n)
+    ]
+
+
+def grafico_heatmap_ano_mes(df: pd.DataFrame):
+    """Alternativa A: mapa de calor Ano × Mês, com o valor escrito em cada
+    célula. Bem mais compacto que o calendário diário."""
+    dados = df.dropna(subset=["data"]).copy()
+    if dados.empty:
+        return None
+    dados["ano_cal"] = dados["data"].dt.year
+    dados["mes_cal"] = dados["data"].dt.month
+    tabela = (
+        dados.pivot_table(index="ano_cal", columns="mes_cal", values="peso", aggfunc="sum")
+        .reindex(columns=range(1, 13))
+        .sort_index()
+    )
+    fig = go.Figure(
+        go.Heatmap(
+            z=tabela.values,
+            x=_MESES_ABREV,
+            y=[str(a) for a in tabela.index],
+            colorscale=config.ESCALA_AZUL_PETROLEO,
+            showscale=False,
+            xgap=3,
+            ygap=3,
+            texttemplate="%{z:.0f}",
+            hovertemplate="%{y} · %{x}<br>Valor: %{z:.0f}<extra></extra>",
+        )
+    )
+    fig.update_yaxes(autorange="reversed", title="")
+    fig.update_xaxes(title="", side="top")
+    return _layout_padrao(
+        fig, "Alternativa A · Mapa de calor Ano × Mês", altura=config.ALTURA_GRAFICO_COMPARACAO
+    )
+
+
+def grafico_comparativo_anos(df: pd.DataFrame):
+    """Alternativa B: uma linha por ano (Jan–Dez), para comparar
+    sazonalidade e crescimento entre anos. Ano mais recente = azul mais
+    escuro."""
+    dados = df.dropna(subset=["data"]).copy()
+    if dados.empty:
+        return None
+    dados["ano_cal"] = dados["data"].dt.year
+    dados["mes_cal"] = dados["data"].dt.month
+    serie = dados.groupby(["ano_cal", "mes_cal"], as_index=False)["peso"].sum()
+    anos = sorted(serie["ano_cal"].unique())
+    cores = _cores_gradiente(len(anos), config.AZUL_CLARO, config.AZUL_ESCURO)
+
+    fig = go.Figure()
+    for ano, cor in zip(anos, cores):
+        sub = serie[serie["ano_cal"] == ano].set_index("mes_cal").reindex(range(1, 13))
+        fig.add_trace(
+            go.Scatter(
+                x=_MESES_ABREV,
+                y=sub["peso"],
+                name=str(ano),
+                mode="lines+markers",
+                line=dict(color=cor, width=2.5),
+                marker=dict(size=6),
+                connectgaps=False,
+            )
+        )
+    fig.update_xaxes(title="")
+    fig.update_yaxes(title="")
+    fig.update_layout(legend=dict(orientation="h", y=-0.15))
+    return _layout_padrao(
+        fig, "Alternativa B · Comparativo mensal entre anos", altura=config.ALTURA_GRAFICO_COMPARACAO
+    )

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-"""Componentes de interface: CSS, título da tela, controles de
-apresentação (play/pause + seletor de tela), filtros da barra lateral e
-cards de KPI."""
+"""Componentes de interface: CSS, barra superior (título da tela +
+play/pause + pontos de navegação), filtros da barra lateral e cards de
+KPI."""
 
 import datetime as dt
 
@@ -30,13 +30,19 @@ def aplicar_estilo():
                 transition-delay: 0s !important;
             }}
 
-            /* Cabeçalho do Streamlit: mantido, só bem mais baixo e sem os
-               ícones de menu/"Deploy" — mas preserva o botão de
-               abrir/fechar a barra lateral, que fica dentro dele. */
+            /* Cabeçalho do Streamlit: mantido, mas transparente e baixo, e
+               sem capturar cliques (só o botão de abrir/fechar a barra
+               lateral, dentro dele, continua clicável). Assim o conteúdo
+               pode começar bem perto do topo da tela. */
             header[data-testid="stHeader"] {{
-                height: 2.5rem;
-                min-height: 2.5rem;
-                background: {config.COR_FUNDO};
+                height: 2rem;
+                min-height: 2rem;
+                background: transparent;
+                pointer-events: none;
+            }}
+            header[data-testid="stHeader"] button,
+            header[data-testid="stHeader"] a {{
+                pointer-events: auto;
             }}
             div[data-testid="stToolbarActions"] {{
                 display: none;
@@ -56,7 +62,7 @@ def aplicar_estilo():
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
-                padding-top: 2.7rem;
+                padding-top: 1.1rem;
                 padding-bottom: 0.4rem;
             }}
             section[data-testid="stSidebar"] .block-container {{
@@ -88,10 +94,31 @@ def aplicar_estilo():
                 margin-bottom: 0.3rem;
             }}
 
-            /* Espaço extra acima dos controles de apresentação (Tela +
-               Play/Pause), para separar visualmente dos filtros. */
-            .bloco-apresentacao {{
-                margin-top: 1.6rem;
+            /* Elemento invisível (o próprio <style>) não deve gastar espaço */
+            div[data-testid="stElementContainer"]:has(style) {{
+                display: none;
+            }}
+
+            /* Barra superior: título à esquerda, controles centralizados */
+            .titulo-slide {{
+                text-align: left;
+                color: {config.AZUL_PETROLEO};
+                font-weight: 700;
+                font-size: 1.35rem;
+                line-height: 1.2;
+            }}
+            /* Com a barra lateral recolhida, o botão de reabrir fica no
+               canto superior esquerdo: afasta o título dele. */
+            .stApp:has(section[data-testid="stSidebar"][aria-expanded="false"]) .titulo-slide {{
+                padding-left: 2.4rem;
+            }}
+            .st-key-controles_slide div[role="radiogroup"] {{
+                justify-content: center;
+                gap: 0.15rem;
+            }}
+            .st-key-controles_slide .stButton {{
+                display: flex;
+                justify-content: flex-end;
             }}
 
             /* Botões (Play/Pause e popovers de filtro) na paleta do projeto */
@@ -110,16 +137,6 @@ def aplicar_estilo():
     )
 
 
-def titulo_tela():
-    """Título da tela atual, alinhado à esquerda, no topo da área
-    principal (onde antes ficavam os controles de navegação)."""
-    st.markdown(
-        f"<div style='text-align:left; padding:2px 0 8px 0; color:{config.AZUL_PETROLEO}; "
-        f"font-weight:700; font-size:1.35rem;'>{config.NOMES_TELAS[st.session_state.tela_atual]}</div>",
-        unsafe_allow_html=True,
-    )
-
-
 def _cabecalho_sidebar():
     """Mostra o logo (config.LOGO_PATH); se o arquivo não existir, cai de
     volta para um título em texto, sem quebrar o app."""
@@ -129,35 +146,64 @@ def _cabecalho_sidebar():
         st.sidebar.markdown("## 🚦 Dashboard EPTRAN")
 
 
-def controle_apresentacao():
-    """Controles de apresentação (seletor de tela em dropdown + botão de
-    play/pause só com ícone), na barra lateral, abaixo dos filtros."""
+def _alternar_autoplay():
+    st.session_state.autoplay = not st.session_state.autoplay
+
+
+def _ir_para_tela():
+    """Clicar em um ponto = navegação manual: vai para a tela escolhida e
+    pausa a rotação automática."""
+    st.session_state.tela_atual = st.session_state["seletor_tela_pontos"]
+    st.session_state.autoplay = False
+
+
+def barra_superior() -> int:
+    """Linha no topo da área principal: título da tela à esquerda e, no
+    centro, botão play/pause (só ícone) + 3 pontos para trocar de tela.
+    Devolve o índice da tela atual."""
     if "tela_atual" not in st.session_state:
         st.session_state.tela_atual = 0
     if "autoplay" not in st.session_state:
         st.session_state.autoplay = False  # começa desligado; liga pelo botão
 
-    st.sidebar.markdown('<div class="bloco-apresentacao"></div>', unsafe_allow_html=True)
-    st.sidebar.markdown("##### Apresentação")
+    # Mantém os pontos sincronizados com a tela atual (inclusive quando o
+    # autoplay troca de tela sozinho). Precisa ser feito antes de criar o
+    # widget.
+    st.session_state["seletor_tela_pontos"] = st.session_state.tela_atual
 
-    col_tela, col_play = st.sidebar.columns([4, 1])
+    col_titulo, col_ctrl, _ = st.columns([3, 2, 3], vertical_alignment="center")
 
-    with col_tela:
-        indice = st.selectbox(
-            "Tela",
-            options=[0, 1, 2],
-            index=st.session_state.tela_atual,
-            format_func=lambda i: config.NOMES_TELAS[i],
-            label_visibility="collapsed",
-            key="seletor_tela_dropdown",
+    with col_titulo:
+        st.markdown(
+            f"<div class='titulo-slide'>{config.NOMES_TELAS[st.session_state.tela_atual]}</div>",
+            unsafe_allow_html=True,
         )
-        if not st.session_state.autoplay:
-            st.session_state.tela_atual = indice
 
-    with col_play:
-        icone = "⏸" if st.session_state.autoplay else "▶"
-        if st.button(icone, use_container_width=True, key="botao_play_pause"):
-            st.session_state.autoplay = not st.session_state.autoplay
+    with col_ctrl:
+        with st.container(key="controles_slide"):
+            col_play, col_pontos = st.columns([1, 1.6], vertical_alignment="center", gap="small")
+            with col_play:
+                icone = ":material/pause:" if st.session_state.autoplay else ":material/play_arrow:"
+                st.button(
+                    " ",
+                    icon=icone,
+                    type="tertiary",
+                    key="botao_play_pause",
+                    help="Pausar rotação automática" if st.session_state.autoplay else "Iniciar rotação automática",
+                    on_click=_alternar_autoplay,
+                )
+            with col_pontos:
+                st.radio(
+                    "Tela",
+                    options=[0, 1, 2],
+                    format_func=lambda i: "",
+                    horizontal=True,
+                    label_visibility="collapsed",
+                    key="seletor_tela_pontos",
+                    on_change=_ir_para_tela,
+                )
+
+    return st.session_state.tela_atual
 
 
 def _multiselect_compacto(rotulo: str, opcoes: list, key: str) -> list:

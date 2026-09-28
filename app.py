@@ -68,19 +68,11 @@ if st.session_state.autoplay:
 
 
 # ---------------------------------------------------------------------------
-# Barra lateral: filtros + controles de apresentação (Tela / Play-Pause).
-# Chamados antes de ler tela_atual abaixo, para o valor já vir atualizado
-# nesta mesma execução caso o usuário tenha acabado de trocar de tela.
+# Barra lateral (filtros) e barra superior (título + play/pause + pontos).
+# Ambas resolvem a tela atual antes de ela ser usada mais abaixo.
 # ---------------------------------------------------------------------------
 filtros = ui.filtros_globais(df, opcoes_bairro)
-ui.controle_apresentacao()
-tela_atual = st.session_state.tela_atual
-
-
-# ---------------------------------------------------------------------------
-# Área principal: título da tela (alinhado à esquerda)
-# ---------------------------------------------------------------------------
-ui.titulo_tela()
+tela_atual = ui.barra_superior()
 
 data_ini, data_fim = filtros["periodo"]
 mascara = (
@@ -142,6 +134,13 @@ elif tela_atual == 1:
         )
 
 else:
+    # Só nesta tela a área principal volta a rolar normalmente, para caber
+    # as alternativas de gráfico no final (temporárias, para avaliação).
+    st.markdown(
+        "<style>div[data-testid='stMainBlockContainer']{height:auto !important;"
+        "max-height:none !important;overflow:visible !important;display:block !important;}</style>",
+        unsafe_allow_html=True,
+    )
     col1, col2 = st.columns(2)
     with col1:
         fig1 = charts.grafico_evolucao_temporal(df_filtrado)
@@ -151,3 +150,14 @@ else:
         fig2 = charts.grafico_top15_bairros(df_explodido_mapa)
         if fig2:
             st.plotly_chart(fig2, use_container_width=True)
+
+    st.markdown("##### Alternativas ao calendário da Tela 1 (para comparar)")
+    col3, col4 = st.columns(2)
+    with col3:
+        fig3 = charts.grafico_heatmap_ano_mes(df_filtrado)
+        if fig3:
+            st.plotly_chart(fig3, use_container_width=True)
+    with col4:
+        fig4 = charts.grafico_comparativo_anos(df_filtrado)
+        if fig4:
+            st.plotly_chart(fig4, use_container_width=True)

@@ -150,6 +150,12 @@ def grafico_ranking_local(df: pd.DataFrame, top_n: int = 15, altura=config.ALTUR
     return _layout_padrao(fig, f"Top {top_n} Local/Escola", altura=altura)
 
 
+def _abreviar(texto: str, limite: int) -> str:
+    """Corta o texto em 'limite' caracteres, terminando com '…'."""
+    texto = str(texto)
+    return texto if len(texto) <= limite else texto[: limite - 1].rstrip() + "…"
+
+
 def grafico_rankings_lado_a_lado(df: pd.DataFrame, top_n: int = 15, altura=None):
     """Ranking de Programas (esquerda) e Top N Local/Escola (direita) em uma
     única figura com dois painéis. Como é um gráfico só, ele pode ocupar
@@ -174,22 +180,37 @@ def grafico_rankings_lado_a_lado(df: pd.DataFrame, top_n: int = 15, altura=None)
 
     fig = make_subplots(
         rows=1, cols=2,
-        column_widths=[0.45, 0.55],
-        horizontal_spacing=0.25,
+        column_widths=[0.42, 0.58],
+        horizontal_spacing=0.29,
         subplot_titles=("<b>Ranking de Programas</b>", f"<b>Top {top_n} Local/Escola</b>"),
     )
-    for col, dados, nome in ((1, prog, "programa"), (2, local, "local")):
+    # Programas têm espaço à esquerda (margem automática), então aceitam
+    # um limite um pouco maior; o limite de Local/Escola é o que evita
+    # invadir o painel vizinho.
+    for col, dados, nome, limite in (
+        (1, prog, "programa", config.MAX_CHARS_ROTULO_RANKING + 8),
+        (2, local, "local", config.MAX_CHARS_ROTULO_RANKING),
+    ):
         if dados.empty:
             continue
+        nomes_completos = list(dados[nome])
         fig.add_trace(
             go.Bar(
-                x=dados["peso"], y=dados[nome], orientation="h",
+                x=dados["peso"], y=nomes_completos, orientation="h",
                 marker=dict(
                     color=dados["peso"], colorscale=config.ESCALA_AZUL_PETROLEO,
                     cmin=0, cmax=float(dados["peso"].max()), showscale=False,
                 ),
                 hovertemplate="%{y}<br>%{x:,.0f}<extra></extra>",
             ),
+            row=1, col=col,
+        )
+        # O eixo usa o nome completo (evita fundir barras se dois nomes
+        # ficassem iguais depois de cortados); só o texto exibido é abreviado.
+        fig.update_yaxes(
+            tickmode="array",
+            tickvals=nomes_completos,
+            ticktext=[_abreviar(n, limite) for n in nomes_completos],
             row=1, col=col,
         )
     fig.update_yaxes(automargin=True, title="")

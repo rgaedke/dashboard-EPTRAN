@@ -134,6 +134,10 @@ JOINVILLE_LON = -48.8487
 ALTURA_SANKEY = 460
 ALTURA_GRAFICO_SECUNDARIO = 400  # evolução temporal e Top 15 (Tela 3)
 ALTURA_GRAFICO_GRADE = 320  # Ranking de Programas e Ranking Local/Escola (Tela 1)
+# Máximo de caracteres exibidos nos nomes do eixo vertical dos rankings da
+# Tela 1 (o resto é cortado com "…"; o nome completo aparece ao passar o
+# mouse sobre a barra).
+MAX_CHARS_ROTULO_RANKING = 34
 # O mapa (Tela 2) não usa uma altura fixa: ele preenche automaticamente o
 # espaço vertical disponível na tela (ver st.container(height="stretch")
 # em app.py).

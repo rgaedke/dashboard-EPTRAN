@@ -64,7 +64,17 @@ if "tela_atual" not in st.session_state:
 
 if st.session_state.autoplay:
     contador = st_autorefresh(interval=config.INTERVALO_AUTOPLAY_MS, key="autorefresh_kiosk")
-    st.session_state.tela_atual = contador % 3
+    # A rotação continua a partir do slide em que o play foi acionado (em
+    # vez de sempre voltar ao primeiro): guarda o slide e o valor do
+    # contador no início e avança a cada tick relativo a eles.
+    if st.session_state.get("ref_contador") is None:
+        st.session_state.ref_contador = contador
+        st.session_state.tela_base = st.session_state.tela_atual
+    st.session_state.tela_atual = (
+        st.session_state.tela_base + contador - st.session_state.ref_contador
+    ) % 3
+else:
+    st.session_state.ref_contador = None
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +113,7 @@ if df_filtrado.empty:
 
 if tela_atual == 0:
     ui.cards_kpi(df_filtrado, df_explodido_mapa, filtros["metrica"])
-    fig_cal = charts.grafico_calendario_atividade(df_filtrado)
+    fig_cal = charts.grafico_heatmap_ano_mes(df_filtrado)
     if fig_cal:
         st.plotly_chart(fig_cal, use_container_width=True)
     col_a, col_b = st.columns(2)
@@ -134,13 +144,6 @@ elif tela_atual == 1:
         )
 
 else:
-    # Só nesta tela a área principal volta a rolar normalmente, para caber
-    # as alternativas de gráfico no final (temporárias, para avaliação).
-    st.markdown(
-        "<style>div[data-testid='stMainBlockContainer']{height:auto !important;"
-        "max-height:none !important;overflow:visible !important;display:block !important;}</style>",
-        unsafe_allow_html=True,
-    )
     col1, col2 = st.columns(2)
     with col1:
         fig1 = charts.grafico_evolucao_temporal(df_filtrado)
@@ -150,14 +153,3 @@ else:
         fig2 = charts.grafico_top15_bairros(df_explodido_mapa)
         if fig2:
             st.plotly_chart(fig2, use_container_width=True)
-
-    st.markdown("##### Alternativas ao calendário da Tela 1 (para comparar)")
-    col3, col4 = st.columns(2)
-    with col3:
-        fig3 = charts.grafico_heatmap_ano_mes(df_filtrado)
-        if fig3:
-            st.plotly_chart(fig3, use_container_width=True)
-    with col4:
-        fig4 = charts.grafico_comparativo_anos(df_filtrado)
-        if fig4:
-            st.plotly_chart(fig4, use_container_width=True)

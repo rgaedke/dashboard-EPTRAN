@@ -4,7 +4,6 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
 import config
 
@@ -150,72 +149,6 @@ def grafico_ranking_local(df: pd.DataFrame, top_n: int = 15):
     return _layout_padrao(fig, f"Top {top_n} Local/Escola", altura=config.ALTURA_GRAFICO_GRADE)
 
 
-def grafico_calendario_atividade(df: pd.DataFrame):
-    """Calendário de atividade estilo GitHub: um mini-heatmap semana x dia
-    da semana para cada ano presente nos dados filtrados — quanto mais
-    escuro, maior o volume ('peso') naquele dia."""
-    dados = df.dropna(subset=["data"]).copy()
-    if dados.empty:
-        return None
-
-    dados["ano_cal"] = dados["data"].dt.year
-    dados["semana"] = dados["data"].dt.isocalendar().week.astype(int)
-    dados["dia_semana"] = dados["data"].dt.weekday  # 0=Seg ... 6=Dom
-
-    diario = dados.groupby(["ano_cal", "semana", "dia_semana"], as_index=False)["peso"].sum()
-    anos = sorted(diario["ano_cal"].unique())
-    if not anos:
-        return None
-
-    dias_label = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-    valor_max = diario["peso"].max()
-
-    fig = make_subplots(
-        rows=len(anos), cols=1,
-        subplot_titles=[str(a) for a in anos],
-        vertical_spacing=0.12 / max(len(anos), 1),
-    )
-
-    for i, ano in enumerate(anos, start=1):
-        sub = diario[diario["ano_cal"] == ano]
-        semanas = list(range(int(sub["semana"].min()), int(sub["semana"].max()) + 1))
-        matriz = (
-            sub.pivot_table(index="dia_semana", columns="semana", values="peso", fill_value=0)
-            .reindex(index=range(7), columns=semanas, fill_value=0)
-        )
-        fig.add_trace(
-            go.Heatmap(
-                z=matriz.values,
-                x=list(matriz.columns),
-                y=dias_label,
-                zmin=0,
-                zmax=valor_max if valor_max > 0 else 1,
-                colorscale=config.ESCALA_AZUL_PETROLEO,
-                showscale=(i == 1),
-                xgap=2,
-                ygap=2,
-                hovertemplate="Semana %{x}<br>%{y}<br>Valor: %{z:.0f}<extra></extra>",
-            ),
-            row=i, col=1,
-        )
-        fig.update_xaxes(showticklabels=False, row=i, col=1)
-        fig.update_yaxes(autorange="reversed", row=i, col=1)
-
-    altura = min(120 * len(anos) + 60, 520)
-    fig.update_layout(
-        paper_bgcolor=config.COR_FUNDO,
-        plot_bgcolor=config.COR_FUNDO,
-        font=dict(color=config.COR_TEXTO, family="Segoe UI, Arial, sans-serif"),
-        margin=dict(l=10, r=10, t=30, b=10),
-        height=altura,
-        coloraxis_colorbar=dict(title=""),
-    )
-    for anot in fig.layout.annotations:
-        anot.font.color = config.AZUL_PETROLEO
-        anot.font.size = 13
-    return fig
-
-
 def grafico_mapa_coropletico(df_explodido: pd.DataFrame, geojson: dict):
     """Mapa coroplético por bairro. Recebe o dataframe já 'explodido'
     (uma linha por bairro citado) e já sem os registros Não mapeado /
@@ -295,30 +228,14 @@ def grafico_top15_bairros(df_explodido: pd.DataFrame):
 
 
 # ---------------------------------------------------------------------------
-# Alternativas ao calendário de atividade (para comparação, no fim da Tela 3)
+# Atividade por mês e ano (Tela 1)
 # ---------------------------------------------------------------------------
 
 _MESES_ABREV = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
 
-def _cores_gradiente(n: int, cor_ini: str, cor_fim: str) -> list:
-    """n cores igualmente espaçadas entre cor_ini e cor_fim (hex)."""
-    def _rgb(h):
-        h = h.lstrip("#")
-        return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
-
-    ini, fim = _rgb(cor_ini), _rgb(cor_fim)
-    if n <= 1:
-        return [cor_fim]
-    return [
-        "#" + "".join(f"{int(ini[k] + (fim[k] - ini[k]) * i / (n - 1)):02X}" for k in range(3))
-        for i in range(n)
-    ]
-
-
 def grafico_heatmap_ano_mes(df: pd.DataFrame):
-    """Alternativa A: mapa de calor Ano × Mês, com o valor escrito em cada
-    célula. Bem mais compacto que o calendário diário."""
+    """Mapa de calor Ano × Mês, com o valor escrito em cada célula."""
     dados = df.dropna(subset=["data"]).copy()
     if dados.empty:
         return None
@@ -344,41 +261,5 @@ def grafico_heatmap_ano_mes(df: pd.DataFrame):
     )
     fig.update_yaxes(autorange="reversed", title="")
     fig.update_xaxes(title="", side="top")
-    return _layout_padrao(
-        fig, "Alternativa A · Mapa de calor Ano × Mês", altura=config.ALTURA_GRAFICO_COMPARACAO
-    )
-
-
-def grafico_comparativo_anos(df: pd.DataFrame):
-    """Alternativa B: uma linha por ano (Jan–Dez), para comparar
-    sazonalidade e crescimento entre anos. Ano mais recente = azul mais
-    escuro."""
-    dados = df.dropna(subset=["data"]).copy()
-    if dados.empty:
-        return None
-    dados["ano_cal"] = dados["data"].dt.year
-    dados["mes_cal"] = dados["data"].dt.month
-    serie = dados.groupby(["ano_cal", "mes_cal"], as_index=False)["peso"].sum()
-    anos = sorted(serie["ano_cal"].unique())
-    cores = _cores_gradiente(len(anos), config.AZUL_CLARO, config.AZUL_ESCURO)
-
-    fig = go.Figure()
-    for ano, cor in zip(anos, cores):
-        sub = serie[serie["ano_cal"] == ano].set_index("mes_cal").reindex(range(1, 13))
-        fig.add_trace(
-            go.Scatter(
-                x=_MESES_ABREV,
-                y=sub["peso"],
-                name=str(ano),
-                mode="lines+markers",
-                line=dict(color=cor, width=2.5),
-                marker=dict(size=6),
-                connectgaps=False,
-            )
-        )
-    fig.update_xaxes(title="")
-    fig.update_yaxes(title="")
-    fig.update_layout(legend=dict(orientation="h", y=-0.15))
-    return _layout_padrao(
-        fig, "Alternativa B · Comparativo mensal entre anos", altura=config.ALTURA_GRAFICO_COMPARACAO
-    )
+    altura = min(300, 70 + 42 * len(tabela.index))
+    return _layout_padrao(fig, "Atividade por mês e ano", altura=altura)

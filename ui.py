@@ -112,13 +112,9 @@ def aplicar_estilo():
             .stApp:has(section[data-testid="stSidebar"][aria-expanded="false"]) .titulo-slide {{
                 padding-left: 2.4rem;
             }}
-            .st-key-controles_slide div[role="radiogroup"] {{
-                justify-content: center;
-                gap: 0.15rem;
-            }}
             .st-key-controles_slide .stButton {{
                 display: flex;
-                justify-content: flex-end;
+                justify-content: center;
             }}
 
             /* Botões (Play/Pause e popovers de filtro) na paleta do projeto */
@@ -150,26 +146,25 @@ def _alternar_autoplay():
     st.session_state.autoplay = not st.session_state.autoplay
 
 
-def _ir_para_tela():
+def _ir_para_tela(i: int):
     """Clicar em um ponto = navegação manual: vai para a tela escolhida e
     pausa a rotação automática."""
-    st.session_state.tela_atual = st.session_state["seletor_tela_pontos"]
+    st.session_state.tela_atual = i
     st.session_state.autoplay = False
 
 
 def barra_superior() -> int:
     """Linha no topo da área principal: título da tela à esquerda e, no
     centro, botão play/pause (só ícone) + 3 pontos para trocar de tela.
-    Devolve o índice da tela atual."""
+    Devolve o índice da tela atual.
+
+    Os pontos são botões independentes (não um st.radio): assim não existe
+    nenhum valor de widget sendo reescrito a cada execução, o que causava
+    troca de tela indevida e parada da rotação automática."""
     if "tela_atual" not in st.session_state:
         st.session_state.tela_atual = 0
     if "autoplay" not in st.session_state:
         st.session_state.autoplay = False  # começa desligado; liga pelo botão
-
-    # Mantém os pontos sincronizados com a tela atual (inclusive quando o
-    # autoplay troca de tela sozinho). Precisa ser feito antes de criar o
-    # widget.
-    st.session_state["seletor_tela_pontos"] = st.session_state.tela_atual
 
     col_titulo, col_ctrl, _ = st.columns([3, 2, 3], vertical_alignment="center")
 
@@ -181,8 +176,8 @@ def barra_superior() -> int:
 
     with col_ctrl:
         with st.container(key="controles_slide"):
-            col_play, col_pontos = st.columns([1, 1.6], vertical_alignment="center", gap="small")
-            with col_play:
+            colunas = st.columns(4, vertical_alignment="center", gap="small")
+            with colunas[0]:
                 icone = ":material/pause:" if st.session_state.autoplay else ":material/play_arrow:"
                 st.button(
                     " ",
@@ -192,16 +187,18 @@ def barra_superior() -> int:
                     help="Pausar rotação automática" if st.session_state.autoplay else "Iniciar rotação automática",
                     on_click=_alternar_autoplay,
                 )
-            with col_pontos:
-                st.radio(
-                    "Tela",
-                    options=[0, 1, 2],
-                    format_func=lambda i: "",
-                    horizontal=True,
-                    label_visibility="collapsed",
-                    key="seletor_tela_pontos",
-                    on_change=_ir_para_tela,
-                )
+            for i in range(3):
+                with colunas[i + 1]:
+                    ativo = st.session_state.tela_atual == i
+                    st.button(
+                        " ",
+                        icon=":material/circle:" if ativo else ":material/radio_button_unchecked:",
+                        type="tertiary",
+                        key=f"ponto_tela_{i}",
+                        help=config.NOMES_TELAS[i],
+                        on_click=_ir_para_tela,
+                        args=(i,),
+                    )
 
     return st.session_state.tela_atual
 

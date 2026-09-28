@@ -4,6 +4,7 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 import config
 
@@ -97,7 +98,7 @@ def grafico_sankey(df: pd.DataFrame):
     return _layout_padrao(fig, altura=config.ALTURA_SANKEY)
 
 
-def grafico_ranking_programas(df: pd.DataFrame):
+def grafico_ranking_programas(df: pd.DataFrame, altura=config.ALTURA_GRAFICO_GRADE):
     """Ranking dos programas por volume — a leitura mais direta e rápida
     de "quem é quem" no período filtrado."""
     if df.empty:
@@ -117,10 +118,10 @@ def grafico_ranking_programas(df: pd.DataFrame):
     fig.update_coloraxes(showscale=False)
     fig.update_xaxes(title="")
     fig.update_yaxes(title="")
-    return _layout_padrao(fig, "Ranking de Programas", altura=config.ALTURA_GRAFICO_GRADE)
+    return _layout_padrao(fig, "Ranking de Programas", altura=altura)
 
 
-def grafico_ranking_local(df: pd.DataFrame, top_n: int = 15):
+def grafico_ranking_local(df: pd.DataFrame, top_n: int = 15, altura=config.ALTURA_GRAFICO_GRADE):
     """Ranking dos locais/escolas por volume (top_n). Como não existe uma
     lista oficial de locais para comparar (diferente do Bairro, que usa o
     geojson), nomes quase iguais escritos de formas diferentes na
@@ -146,7 +147,67 @@ def grafico_ranking_local(df: pd.DataFrame, top_n: int = 15):
     fig.update_coloraxes(showscale=False)
     fig.update_xaxes(title="")
     fig.update_yaxes(title="")
-    return _layout_padrao(fig, f"Top {top_n} Local/Escola", altura=config.ALTURA_GRAFICO_GRADE)
+    return _layout_padrao(fig, f"Top {top_n} Local/Escola", altura=altura)
+
+
+def grafico_rankings_lado_a_lado(df: pd.DataFrame, top_n: int = 15, altura=None):
+    """Ranking de Programas (esquerda) e Top N Local/Escola (direita) em uma
+    única figura com dois painéis. Como é um gráfico só, ele pode ocupar
+    todo o espaço vertical restante da tela (st.plotly_chart com
+    height="stretch"); com st.columns isso não funciona, porque as colunas
+    não repassam altura para os gráficos."""
+    if df.empty:
+        return None
+
+    prog = (
+        df.groupby("programa", as_index=False)["peso"].sum()
+        .query("peso > 0").sort_values("peso", ascending=True)
+    )
+    local = (
+        df[df["local"] != "Não informado"]
+        .groupby("local", as_index=False)["peso"].sum()
+        .query("peso > 0").sort_values("peso", ascending=False).head(top_n)
+        .sort_values("peso", ascending=True)
+    )
+    if prog.empty and local.empty:
+        return None
+
+    fig = make_subplots(
+        rows=1, cols=2,
+        column_widths=[0.45, 0.55],
+        horizontal_spacing=0.25,
+        subplot_titles=("<b>Ranking de Programas</b>", f"<b>Top {top_n} Local/Escola</b>"),
+    )
+    for col, dados, nome in ((1, prog, "programa"), (2, local, "local")):
+        if dados.empty:
+            continue
+        fig.add_trace(
+            go.Bar(
+                x=dados["peso"], y=dados[nome], orientation="h",
+                marker=dict(
+                    color=dados["peso"], colorscale=config.ESCALA_AZUL_PETROLEO,
+                    cmin=0, cmax=float(dados["peso"].max()), showscale=False,
+                ),
+                hovertemplate="%{y}<br>%{x:,.0f}<extra></extra>",
+            ),
+            row=1, col=col,
+        )
+    fig.update_yaxes(automargin=True, title="")
+    fig.update_xaxes(title="")
+    fig.update_layout(
+        paper_bgcolor=config.COR_FUNDO,
+        plot_bgcolor=config.COR_FUNDO,
+        font=dict(color=config.COR_TEXTO, family="Segoe UI, Arial, sans-serif"),
+        margin=dict(l=10, r=10, t=44, b=10),
+        showlegend=False,
+        height=altura,
+    )
+    # títulos dos painéis alinhados à esquerda de cada painel
+    for anot, eixo in zip(fig.layout.annotations, (fig.layout.xaxis, fig.layout.xaxis2)):
+        anot.x = eixo.domain[0]
+        anot.xanchor = "left"
+        anot.font.size = 15
+    return fig
 
 
 def grafico_mapa_coropletico(df_explodido: pd.DataFrame, geojson: dict):

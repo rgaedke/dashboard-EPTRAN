@@ -116,15 +116,12 @@ if tela_atual == 0:
     fig_cal = charts.grafico_heatmap_ano_mes(df_filtrado)
     if fig_cal:
         st.plotly_chart(fig_cal, use_container_width=True)
-    col_a, col_b = st.columns(2)
-    with col_a:
-        fig = charts.grafico_ranking_programas(df_filtrado)
+    # Os dois rankings (uma única figura, dois painéis) ocupam todo o espaço
+    # vertical que sobrar até o fim da tela (height="stretch").
+    with st.container(height="stretch"):
+        fig = charts.grafico_rankings_lado_a_lado(df_filtrado)
         if fig:
-            st.plotly_chart(fig, use_container_width=True)
-    with col_b:
-        fig = charts.grafico_ranking_local(df_filtrado)
-        if fig:
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch", height="stretch")
 
 elif tela_atual == 1:
     fig = charts.grafico_mapa_coropletico(df_explodido_mapa, geojson)

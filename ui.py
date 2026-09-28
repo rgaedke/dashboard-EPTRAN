@@ -82,11 +82,17 @@ def aplicar_estilo():
             div[data-testid="stMetric"] {{
                 background-color: {config.COR_FUNDO_ALT};
                 border: 1px solid {config.COR_BORDA};
-                border-radius: 10px;
-                padding: 10px 16px;
+                border-radius: 8px;
+                padding: 4px 12px;
             }}
-            div[data-testid="stMetricValue"] {{
+            div[data-testid="stMetricLabel"] p {{
+                font-size: 0.78rem;
+            }}
+            div[data-testid="stMetricValue"],
+            div[data-testid="stMetricValue"] * {{
                 color: {config.AZUL_ESCURO};
+                font-size: 1.45rem !important;
+                line-height: 1.3;
             }}
             h1, h2, h3, h4 {{
                 color: {config.AZUL_PETROLEO};
@@ -104,7 +110,7 @@ def aplicar_estilo():
                 text-align: left;
                 color: {config.AZUL_PETROLEO};
                 font-weight: 700;
-                font-size: 1.35rem;
+                font-size: 1.85rem;
                 line-height: 1.2;
             }}
             /* Com a barra lateral recolhida, o botão de reabrir fica no
@@ -115,6 +121,10 @@ def aplicar_estilo():
             .st-key-controles_slide .stButton {{
                 display: flex;
                 justify-content: center;
+            }}
+            .st-key-controles_slide [class*="st-key-ponto_tela_"] button p {{
+                font-size: 1.5rem;
+                line-height: 1;
             }}
 
             /* Botões (Play/Pause e popovers de filtro) na paleta do projeto */
@@ -166,6 +176,21 @@ def barra_superior() -> int:
     if "autoplay" not in st.session_state:
         st.session_state.autoplay = False  # começa desligado; liga pelo botão
 
+    # Cor dos pontos: o do slide atual em azul, os demais em cinza claro.
+    # (Feito por CSS porque o ícone "circle" do Material Symbols só existe
+    # como contorno, então não dá para diferenciar "cheio" de "vazio".)
+    regras = [
+        f".st-key-botao_play_pause button, .st-key-botao_play_pause button * "
+        f"{{color:{config.AZUL_PETROLEO} !important;}}"
+    ]
+    for i in range(3):
+        cor = config.AZUL_PETROLEO if i == st.session_state.tela_atual else "#CED4DA"
+        regras.append(
+            f".st-key-ponto_tela_{i} button, .st-key-ponto_tela_{i} button * "
+            f"{{color:{cor} !important;}}"
+        )
+    st.markdown("<style>" + "".join(regras) + "</style>", unsafe_allow_html=True)
+
     col_titulo, col_ctrl, _ = st.columns([3, 2, 3], vertical_alignment="center")
 
     with col_titulo:
@@ -189,10 +214,8 @@ def barra_superior() -> int:
                 )
             for i in range(3):
                 with colunas[i + 1]:
-                    ativo = st.session_state.tela_atual == i
                     st.button(
-                        " ",
-                        icon=":material/circle:" if ativo else ":material/radio_button_unchecked:",
+                        "●",
                         type="tertiary",
                         key=f"ponto_tela_{i}",
                         help=config.NOMES_TELAS[i],
